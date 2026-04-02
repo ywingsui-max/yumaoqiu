@@ -63,7 +63,7 @@
         }
 
         /* ============================================
-           视图管理
+           视图管理 - 防止抖动
            ============================================ */
         .view {
             display: none;
@@ -71,18 +71,20 @@
             padding-bottom: 100px;
             overflow-y: auto;
             background: transparent;
+            /* 固定高度，防止跳动 */
+            min-height: 0;
         }
 
         .view.active {
             display: flex;
             flex-direction: column;
-            animation: fadeInUp 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+            animation: fadeInUp 0.3s ease-out forwards;
         }
 
         @keyframes fadeInUp {
             from {
                 opacity: 0;
-                transform: translateY(20px);
+                transform: translateY(10px);
             }
             to {
                 opacity: 1;
@@ -106,6 +108,8 @@
             top: 0;
             z-index: 100;
             box-shadow: var(--shadow-sm);
+            /* 防止收缩 */
+            flex-shrink: 0;
         }
 
         .brand {
@@ -146,7 +150,7 @@
         }
 
         /* ============================================
-           球员卡片网格
+           球员卡片网格 - 防止跳动
            ============================================ */
         .grid-container {
             display: grid;
@@ -154,12 +158,15 @@
             gap: 12px;
             padding: 16px;
             flex: 1;
+            /* 固定宽度，防止横向抖动 */
+            width: 100%;
+            align-content: flex-start;
         }
 
         .player-card {
             background: var(--card-bg);
             backdrop-filter: blur(10px);
-            border: 1px solid var(--glass-border);
+            border: 2px solid transparent;
             border-radius: 20px;
             overflow: hidden;
             position: relative;
@@ -169,6 +176,8 @@
             height: 220px;
             transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
             box-shadow: var(--shadow-sm);
+            /* 保持一致的border宽度，selected时不会变动 */
+            will-change: transform;
         }
 
         .player-card:hover {
@@ -181,11 +190,40 @@
             transform: scale(0.97);
         }
 
+        /* 选中态 - 保持一致 */
+        .player-card.selected {
+            border-color: var(--success);
+            box-shadow: var(--shadow-md);
+            background: rgba(255, 255, 255, 0.95);
+        }
+
+        .player-card.selected:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 12px 30px rgba(52, 199, 89, 0.15);
+        }
+
         .player-img {
             flex: 1;
             width: 100%;
             object-fit: cover;
             background: linear-gradient(135deg, #E0E0E0 0%, #F0F0F0 100%);
+            /* 图片占位符 */
+            min-height: 140px;
+        }
+
+        .player-img.error {
+            display: none;
+        }
+
+        .player-img-placeholder {
+            flex: 1;
+            width: 100%;
+            background: linear-gradient(135deg, #E0E0E0 0%, #F0F0F0 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 48px;
+            min-height: 140px;
         }
 
         .player-info {
@@ -198,6 +236,8 @@
             flex-direction: column;
             justify-content: center;
             gap: 4px;
+            /* 防止收缩 */
+            flex-shrink: 0;
         }
 
         .player-name {
@@ -215,56 +255,41 @@
             word-break: break-word;
         }
 
-        /* 选择态效果 */
-        .select-mask {
+        /* 选择指示器 - 简化设计 */
+        .select-indicator {
             position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.15);
-            backdrop-filter: blur(5px);
+            top: 10px;
+            right: 10px;
+            width: 28px;
+            height: 28px;
+            background: var(--success);
+            border: 3px solid white;
+            border-radius: 50%;
             display: none;
             align-items: center;
             justify-content: center;
+            font-size: 16px;
+            font-weight: bold;
+            color: white;
+            box-shadow: 0 4px 12px rgba(52, 199, 89, 0.4);
             z-index: 10;
         }
 
-        .select-mask::after {
-            content: '✓';
-            color: white;
-            font-size: 32px;
-            font-weight: 800;
-            width: 48px;
-            height: 48px;
-            background: var(--success);
-            border-radius: 50%;
+        .player-card.selected .select-indicator {
             display: flex;
-            align-items: center;
-            justify-content: center;
-            box-shadow: 0 4px 16px rgba(52, 199, 89, 0.4);
-            animation: scaleIn 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+            animation: popIn 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
         }
 
-        @keyframes scaleIn {
-            from {
-                transform: scale(0.5);
-                opacity: 0;
+        @keyframes popIn {
+            0% {
+                transform: scale(0);
             }
-            to {
+            50% {
+                transform: scale(1.1);
+            }
+            100% {
                 transform: scale(1);
-                opacity: 1;
             }
-        }
-
-        .player-card.selected {
-            border: 2px solid var(--success);
-            background: rgba(52, 199, 89, 0.1);
-            box-shadow: 0 0 0 8px rgba(52, 199, 89, 0.08);
-        }
-
-        .player-card.selected .select-mask {
-            display: flex;
         }
 
         /* ============================================
@@ -279,6 +304,7 @@
             margin: 12px 16px;
             box-shadow: var(--shadow-sm);
             transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+            will-change: transform;
         }
 
         .match-card:not(.completed) {
@@ -319,6 +345,23 @@
             border: 2px solid rgba(255, 255, 255, 0.8);
             box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
             background: linear-gradient(135deg, #E0E0E0 0%, #F0F0F0 100%);
+        }
+
+        .match-avatar.error {
+            display: none;
+        }
+
+        .match-avatar-placeholder {
+            width: 56px;
+            height: 56px;
+            border-radius: 50%;
+            border: 2px solid rgba(255, 255, 255, 0.8);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            background: linear-gradient(135deg, #E0E0E0 0%, #F0F0F0 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
         }
 
         .match-name {
@@ -362,6 +405,7 @@
             gap: 12px;
             transition: all 0.2s ease;
             box-shadow: var(--shadow-sm);
+            will-change: transform;
         }
 
         .rank-item:hover {
@@ -375,6 +419,7 @@
             font-weight: 800;
             color: var(--primary);
             text-align: center;
+            flex-shrink: 0;
         }
 
         .rank-avatar {
@@ -385,6 +430,25 @@
             border: 2px solid rgba(255, 255, 255, 0.8);
             box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
             background: linear-gradient(135deg, #E0E0E0 0%, #F0F0F0 100%);
+            flex-shrink: 0;
+        }
+
+        .rank-avatar.error {
+            display: none;
+        }
+
+        .rank-avatar-placeholder {
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            border: 2px solid rgba(255, 255, 255, 0.8);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+            background: linear-gradient(135deg, #E0E0E0 0%, #F0F0F0 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            flex-shrink: 0;
         }
 
         .rank-info {
@@ -392,6 +456,7 @@
             display: flex;
             flex-direction: column;
             gap: 2px;
+            min-width: 0;
         }
 
         .rank-info-name {
@@ -413,6 +478,7 @@
             color: var(--success);
             text-align: right;
             min-width: 50px;
+            flex-shrink: 0;
         }
 
         /* ============================================
@@ -434,6 +500,7 @@
             padding-top: 12px;
             z-index: 50;
             box-shadow: 0 -4px 16px rgba(0, 0, 0, 0.05);
+            flex-shrink: 0;
         }
 
         .nav-item {
@@ -447,6 +514,7 @@
             cursor: pointer;
             transition: all 0.2s ease;
             gap: 4px;
+            user-select: none;
         }
 
         .nav-item.active {
@@ -824,16 +892,20 @@
         // ============================================
         renderPlayers() {
             const grid = document.getElementById('player-grid');
-            grid.innerHTML = this.players.map(p => `
-                <div class="player-card ${this.selectedIds.includes(p.id) ? 'selected' : ''}" onclick="App.toggleSelect(${p.id})">
-                    <img src="${p.avatar}" class="player-img" alt="${this.escapeHtml(p.name)}" onerror="this.style.display='none'">
-                    <div class="player-info">
-                        <div class="player-name">${this.escapeHtml(p.name)}</div>
-                        <div class="player-title">${this.escapeHtml(p.title)}</div>
+            grid.innerHTML = this.players.map(p => {
+                const initial = p.name[0];
+                return `
+                    <div class="player-card ${this.selectedIds.includes(p.id) ? 'selected' : ''}" onclick="App.toggleSelect(${p.id})">
+                        <img src="${p.avatar}" class="player-img" alt="${this.escapeHtml(p.name)}" onerror="this.style.display='none';this.parentElement.querySelector('.player-img-placeholder').style.display='flex'">
+                        <div class="player-img-placeholder" style="display:none">${initial}</div>
+                        <div class="player-info">
+                            <div class="player-name">${this.escapeHtml(p.name)}</div>
+                            <div class="player-title">${this.escapeHtml(p.title)}</div>
+                        </div>
+                        <div class="select-indicator">✓</div>
                     </div>
-                    <div class="select-mask"></div>
-                </div>
-            `).join('');
+                `;
+            }).join('');
         },
 
         toggleSelect(id) {
@@ -895,16 +967,21 @@
                 const p2 = this.getPlayerById(m.p2Id);
                 if (!p1 || !p2) return '';
 
+                const p1Initial = p1.name[0];
+                const p2Initial = p2.name[0];
+
                 return `
                     <div class="match-card ${m.done ? 'completed' : ''}" ${!m.done ? `onclick="App.openScore(${m.id})"` : ''}>
                         <div class="match-row">
                             <div class="match-player">
-                                <img src="${p1.avatar}" class="match-avatar" alt="${this.escapeHtml(p1.name)}" onerror="this.style.display='none'">
+                                <img src="${p1.avatar}" class="match-avatar" alt="${this.escapeHtml(p1.name)}" onerror="this.style.display='none';this.parentElement.querySelector('.match-avatar-placeholder').style.display='flex'">
+                                <div class="match-avatar-placeholder" style="display:none">${p1Initial}</div>
                                 <div class="match-name">${this.escapeHtml(p1.name)}</div>
                             </div>
                             <div class="match-vs">${m.done ? '已完赛' : '未开始'}</div>
                             <div class="match-player">
-                                <img src="${p2.avatar}" class="match-avatar" alt="${this.escapeHtml(p2.name)}" onerror="this.style.display='none'">
+                                <img src="${p2.avatar}" class="match-avatar" alt="${this.escapeHtml(p2.name)}" onerror="this.style.display='none';this.parentElement.querySelector('.match-avatar-placeholder').style.display='flex'">
+                                <div class="match-avatar-placeholder" style="display:none">${p2Initial}</div>
                                 <div class="match-name">${this.escapeHtml(p2.name)}</div>
                             </div>
                         </div>
@@ -1002,10 +1079,12 @@
 
             list.innerHTML = sorted.map((p, i) => {
                 const winRate = p.played > 0 ? Math.round((p.wins / p.played) * 100) : 0;
+                const initial = p.name[0];
                 return `
                     <div class="rank-item">
                         <div class="rank-num">${i + 1}</div>
-                        <img src="${p.avatar}" class="rank-avatar" alt="${this.escapeHtml(p.name)}" onerror="this.style.display='none'">
+                        <img src="${p.avatar}" class="rank-avatar" alt="${this.escapeHtml(p.name)}" onerror="this.style.display='none';this.parentElement.querySelector('.rank-avatar-placeholder').style.display='flex'">
+                        <div class="rank-avatar-placeholder" style="display:none">${initial}</div>
                         <div class="rank-info">
                             <div class="rank-info-name">${this.escapeHtml(p.name)}</div>
                             <div class="rank-info-stats">出战 ${p.played} 场 · 胜率 ${winRate}%</div>
