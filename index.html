@@ -320,10 +320,10 @@
 <script>
     const App = {
         players: [
-            { id: 1, name: "阿水", title: "摸鱼小弟", avatar: "https://github.com/ywingsui-max/yumaoqiu-assets/blob/main/as.jpg?raw=true", wins: 0, played: 0 },
-            { id: 2, name: "高总", title: "一击必杀", avatar: "https://github.com/ywingsui-max/yumaoqiu-assets/blob/main/gz.jpg?raw=true", wins: 0, played: 0 },
-            { id: 3, name: "C炜", title: "旋风小霸王", avatar: "https://github.com/ywingsui-max/yumaoqiu-assets/blob/main/cwei.jpg?raw=true", wins: 0, played: 0 },
-            { id: 4, name: "鸿哥", title: "大师选手", avatar: "https://github.com/ywingsui-max/yumaoqiu-assets/blob/main/ch.jpg?raw=true", wins: 0, played: 0 }
+            { id: 1, name: "阿水", title: "摸鱼小弟", avatar: "https://github.com/ywingsui-max/yumaoqiu-assets/blob/main/as.jpg?raw=true", wins: 0, played: 0, totalScore: 0 },
+            { id: 2, name: "高总", title: "一击必杀", avatar: "https://github.com/ywingsui-max/yumaoqiu-assets/blob/main/gz.jpg?raw=true", wins: 0, played: 0, totalScore: 0 },
+            { id: 3, name: "C炜", title: "旋风小霸王", avatar: "https://github.com/ywingsui-max/yumaoqiu-assets/blob/main/cwei.jpg?raw=true", wins: 0, played: 0, totalScore: 0 },
+            { id: 4, name: "鸿哥", title: "大师选手", avatar: "https://github.com/ywingsui-max/yumaoqiu-assets/blob/main/ch.jpg?raw=true", wins: 0, played: 0, totalScore: 0 }
         ],
         
         matches: [],
@@ -335,14 +335,31 @@
 
         loadData() {
             try {
-                const stored = localStorage.getItem('sports_matches');
-                this.matches = stored ? JSON.parse(stored) : [];
-            } catch (e) { console.error('数据加载失败:', e); this.matches = []; }
+                const stored = localStorage.getItem('sports_data');
+                if (stored) {
+                    const data = JSON.parse(stored);
+                    this.matches = data.matches || [];
+                    this.players = data.players || this.players;
+                } else {
+                    this.matches = [];
+                }
+            } catch (e) { 
+                console.error('数据加载失败:', e); 
+                this.matches = []; 
+            }
         },
 
         saveData() {
-            try { localStorage.setItem('sports_matches', JSON.stringify(this.matches)); }
-            catch (e) { console.error('数据保存失败:', e); this.showToast('数据保存失败'); }
+            try { 
+                localStorage.setItem('sports_data', JSON.stringify({
+                    matches: this.matches,
+                    players: this.players
+                })); 
+            }
+            catch (e) { 
+                console.error('数据保存失败:', e); 
+                this.showToast('数据保存失败'); 
+            }
         },
 
         showView(viewId) {
@@ -478,7 +495,7 @@
             const s1 = parseInt(s1Str);
             const s2 = parseInt(s2Str);
 
-            if (isNaN(s1) || isNaN(s2) || s1 < 0 || s2 < 0) { this.showToast("请输入有效的比分"); return; }
+            if (isNaN(s1) || isNaN(s2) || s1 < 0 || s2 < 0) { this.showToast("请输入��效的比分"); return; }
 
             const match = this.matches.find(m => m.id === this.currentMatchId);
             if (!match) return;
@@ -493,6 +510,8 @@
 
             p1.played++;
             p2.played++;
+            p1.totalScore += s1;
+            p2.totalScore += s2;
 
             if (s1 > s2) { p1.wins++; }
             else if (s2 > s1) { p2.wins++; }
@@ -524,7 +543,6 @@
             const sorted = this.getRankedPlayers();
 
             list.innerHTML = sorted.map((p, i) => {
-                const winRate = p.played > 0 ? Math.round((p.wins / p.played) * 100) : 0;
                 const initial = p.name[0];
                 return `
                     <div class="rank-item">
@@ -533,9 +551,9 @@
                         <div class="rank-avatar-placeholder">${initial}</div>
                         <div class="rank-info">
                             <div class="rank-info-name">${this.escapeHtml(p.name)}</div>
-                            <div class="rank-info-stats">出战 ${p.played} 场 · 胜率 ${winRate}%</div>
+                            <div class="rank-info-stats">出战 ${p.played} 场 · 总得分 ${p.totalScore}</div>
                         </div>
-                        <div class="rank-points">${p.wins} 胜</div>
+                        <div class="rank-points">${p.totalScore} 分</div>
                     </div>
                 `;
             }).join('');
@@ -544,10 +562,7 @@
         getRankedPlayers() {
             if (!this.rankedCache) {
                 this.rankedCache = [...this.players].sort((a, b) => {
-                    if (b.wins !== a.wins) return b.wins - a.wins;
-                    const aRate = a.played > 0 ? a.wins / a.played : 0;
-                    const bRate = b.played > 0 ? b.wins / b.played : 0;
-                    return bRate - aRate;
+                    return b.totalScore - a.totalScore;
                 });
             }
             return this.rankedCache;
