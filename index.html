@@ -63,7 +63,7 @@
         .player-card {
             background: var(--card-bg); backdrop-filter: blur(10px); border: 2px solid transparent; border-radius: 20px;
             overflow: hidden; position: relative; display: flex; flex-direction: column; cursor: pointer; height: 220px;
-            transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1); box-shadow: var(--shadow-sm); will-change: transform;
+            transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1); box-shadow: none; will-change: transform;
         }
 
         .player-card:hover { transform: translateY(-4px); box-shadow: var(--shadow-md); background: rgba(255, 255, 255, 0.9); }
@@ -182,8 +182,10 @@
         }
         
         .nav-item.active { color: var(--primary); }
-        .nav-icon { font-size: 28px; line-height: 1; transition: transform 0.2s ease; }
+        .nav-icon { width: 24px; height: 24px; line-height: 1; transition: transform 0.2s ease; display: flex; align-items: center; justify-content: center; }
         .nav-item.active .nav-icon { transform: scale(1.1); }
+
+        .nav-icon svg { width: 100%; height: 100%; }
 
         .modal {
             display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.3);
@@ -264,15 +266,33 @@
 
     <nav class="bottom-nav">
         <div class="nav-item active" onclick="App.showView('view-players')">
-            <span class="nav-icon">👤</span>
+            <span class="nav-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                    <circle cx="12" cy="7" r="4"></circle>
+                </svg>
+            </span>
             <span>球员</span>
         </div>
         <div class="nav-item" onclick="App.showView('view-matches')">
-            <span class="nav-icon">⚔️</span>
+            <span class="nav-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M6 9h12M12 3v18"></path>
+                    <path d="M3 3l18 18"></path>
+                    <path d="M21 3L3 21"></path>
+                </svg>
+            </span>
             <span>对战</span>
         </div>
         <div class="nav-item" onclick="App.showView('view-rank')">
-            <span class="nav-icon">🏆</span>
+            <span class="nav-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M6 9H5a2 2 0 0 0-2 2v5a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-5a2 2 0 0 0-2-2h-1"></path>
+                    <path d="M6 5h12v4H6z"></path>
+                    <line x1="9" y1="5" x2="9" y2="3"></line>
+                    <line x1="15" y1="5" x2="15" y2="3"></line>
+                </svg>
+            </span>
             <span>排行</span>
         </div>
     </nav>
