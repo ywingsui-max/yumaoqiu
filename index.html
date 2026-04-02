@@ -5,12 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>多运动 - 赛事系统</title>
     <style>
-        /* ============================================
-           iOS 26 设计规范 - 液态玻璃风格主题
-           ============================================ */
-        
         :root {
-            /* iOS 26 标准色值 */
             --primary: #007AFF;
             --success: #34C759;
             --bg: #F5F5F7;
@@ -19,8 +14,6 @@
             --text-sub: #8E8E93;
             --border: rgba(255, 255, 255, 0.5);
             --danger: #FF3B30;
-            
-            /* 液态玻璃效果参数 */
             --glass-blur: 20px;
             --glass-bg: rgba(255, 255, 255, 0.8);
             --glass-border: rgba(255, 255, 255, 0.6);
@@ -29,742 +22,246 @@
             --shadow-lg: 0 12px 40px rgba(0, 0, 0, 0.15);
         }
         
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-            -webkit-tap-highlight-color: transparent;
-        }
-        
-        html, body {
-            width: 100%;
-            height: 100%;
-        }
+        * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+        html, body { width: 100%; height: 100%; }
         
         body {
             font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", Roboto, sans-serif;
             background: linear-gradient(135deg, #F5F5F7 0%, #FFFFFF 100%);
-            display: flex;
-            justify-content: center;
-            align-items: flex-start;
-            min-height: 100vh;
-            padding: 0;
+            display: flex; justify-content: center; align-items: flex-start; min-height: 100vh; padding: 0;
         }
         
         #app {
-            width: 100%;
-            max-width: 430px;
-            min-height: 100vh;
-            position: relative;
-            display: flex;
-            flex-direction: column;
+            width: 100%; max-width: 430px; min-height: 100vh; position: relative; display: flex; flex-direction: column;
             background: linear-gradient(180deg, rgba(245, 245, 247, 0.98) 0%, rgba(255, 255, 255, 0.95) 100%);
             box-shadow: 0 20px 60px rgba(0, 0, 0, 0.08);
         }
 
-        /* ============================================
-           视图管理 - 防止抖动
-           ============================================ */
-        .view {
-            display: none;
-            flex: 1;
-            padding-bottom: 100px;
-            overflow-y: auto;
-            background: transparent;
-            /* 固定高度，防止跳动 */
-            min-height: 0;
-        }
+        .view { display: none; flex: 1; padding-bottom: 100px; overflow-y: auto; background: transparent; min-height: 0; }
+        .view.active { display: flex; flex-direction: column; animation: fadeInUp 0.3s ease-out forwards; }
+        @keyframes fadeInUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
 
-        .view.active {
-            display: flex;
-            flex-direction: column;
-            animation: fadeInUp 0.3s ease-out forwards;
-        }
-
-        @keyframes fadeInUp {
-            from {
-                opacity: 0;
-                transform: translateY(10px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-
-        /* ============================================
-           顶部导航栏 - 液态玻璃设计
-           ============================================ */
         .header {
-            height: 60px;
-            background: var(--glass-bg);
-            backdrop-filter: blur(var(--glass-blur));
-            border-bottom: 1px solid var(--glass-border);
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 0 20px;
-            position: sticky;
-            top: 0;
-            z-index: 100;
-            box-shadow: var(--shadow-sm);
-            /* 防止收缩 */
-            flex-shrink: 0;
+            height: 60px; background: var(--glass-bg); backdrop-filter: blur(var(--glass-blur)); border-bottom: 1px solid var(--glass-border);
+            display: flex; justify-content: space-between; align-items: center; padding: 0 20px; position: sticky; top: 0; z-index: 100;
+            box-shadow: var(--shadow-sm); flex-shrink: 0;
         }
-
-        .brand {
-            font-size: 18px;
-            font-weight: 700;
-            color: var(--text-main);
-            letter-spacing: -0.5px;
-        }
-
+        
+        .brand { font-size: 18px; font-weight: 700; color: var(--text-main); letter-spacing: -0.5px; }
+        
         .header-btn {
-            font-size: 15px;
-            font-weight: 600;
-            color: var(--primary);
-            cursor: pointer;
-            border: none;
-            background: transparent;
-            padding: 8px 12px;
-            border-radius: 10px;
-            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            font-size: 15px; font-weight: 600; color: var(--primary); cursor: pointer; border: none; background: transparent;
+            padding: 8px 12px; border-radius: 10px; transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
         }
+        
+        .header-btn:active { transform: scale(0.95); opacity: 0.7; }
+        .header-btn.highlight { background: var(--success); color: #FFFFFF; padding: 8px 16px; border-radius: 12px; box-shadow: 0 4px 12px rgba(52, 199, 89, 0.3); }
+        .header-btn.highlight:active { transform: scale(0.93); box-shadow: 0 2px 8px rgba(52, 199, 89, 0.2); }
 
-        .header-btn:active {
-            transform: scale(0.95);
-            opacity: 0.7;
-        }
-
-        .header-btn.highlight {
-            background: var(--success);
-            color: #FFFFFF;
-            padding: 8px 16px;
-            border-radius: 12px;
-            box-shadow: 0 4px 12px rgba(52, 199, 89, 0.3);
-        }
-
-        .header-btn.highlight:active {
-            transform: scale(0.93);
-            box-shadow: 0 2px 8px rgba(52, 199, 89, 0.2);
-        }
-
-        /* ============================================
-           球员卡片网格 - 防止跳动
-           ============================================ */
-        .grid-container {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 12px;
-            padding: 16px;
-            flex: 1;
-            /* 固定宽度，防止横向抖动 */
-            width: 100%;
-            align-content: flex-start;
-        }
+        .grid-container { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; padding: 16px; flex: 1; width: 100%; align-content: flex-start; }
 
         .player-card {
-            background: var(--card-bg);
-            backdrop-filter: blur(10px);
-            border: 2px solid transparent;
-            border-radius: 20px;
-            overflow: hidden;
-            position: relative;
-            display: flex;
-            flex-direction: column;
-            cursor: pointer;
-            height: 220px;
-            transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
-            box-shadow: var(--shadow-sm);
-            /* 保持一致的border宽度，selected时不会变动 */
-            will-change: transform;
+            background: var(--card-bg); backdrop-filter: blur(10px); border: 2px solid transparent; border-radius: 20px;
+            overflow: hidden; position: relative; display: flex; flex-direction: column; cursor: pointer; height: 220px;
+            transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1); box-shadow: var(--shadow-sm); will-change: transform;
         }
 
-        .player-card:hover {
-            transform: translateY(-4px);
-            box-shadow: var(--shadow-md);
-            background: rgba(255, 255, 255, 0.9);
-        }
+        .player-card:hover { transform: translateY(-4px); box-shadow: var(--shadow-md); background: rgba(255, 255, 255, 0.9); }
+        .player-card:active { transform: scale(0.97); }
+        .player-card.selected { border-color: var(--success); box-shadow: var(--shadow-md); background: rgba(255, 255, 255, 0.95); }
+        .player-card.selected:hover { transform: translateY(-4px); box-shadow: 0 12px 30px rgba(52, 199, 89, 0.15); }
 
-        .player-card:active {
-            transform: scale(0.97);
-        }
-
-        /* 选中态 - 保持一致 */
-        .player-card.selected {
-            border-color: var(--success);
-            box-shadow: var(--shadow-md);
-            background: rgba(255, 255, 255, 0.95);
-        }
-
-        .player-card.selected:hover {
-            transform: translateY(-4px);
-            box-shadow: 0 12px 30px rgba(52, 199, 89, 0.15);
+        .player-img-wrapper {
+            flex: 1; width: 100%; position: relative; overflow: hidden; background: linear-gradient(135deg, #E0E0E0 0%, #F0F0F0 100%);
         }
 
         .player-img {
-            flex: 1;
-            width: 100%;
-            object-fit: cover;
-            background: linear-gradient(135deg, #E0E0E0 0%, #F0F0F0 100%);
-            /* 图片占位符 */
-            min-height: 140px;
+            width: 100%; height: 100%; object-fit: cover; display: block;
         }
-
-        .player-img.error {
-            display: none;
-        }
+        
+        .player-img.hidden { display: none; }
 
         .player-img-placeholder {
-            flex: 1;
-            width: 100%;
-            background: linear-gradient(135deg, #E0E0E0 0%, #F0F0F0 100%);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 48px;
-            min-height: 140px;
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            display: flex; align-items: center; justify-content: center; font-size: 48px; font-weight: 700; color: rgba(0, 0, 0, 0.2);
         }
+        
+        .player-img-placeholder.hidden { display: none; }
 
         .player-info {
-            padding: 14px;
-            text-align: center;
-            background: rgba(255, 255, 255, 0.5);
-            backdrop-filter: blur(10px);
-            min-height: 70px;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            gap: 4px;
-            /* 防止收缩 */
-            flex-shrink: 0;
+            padding: 14px; text-align: center; background: rgba(255, 255, 255, 0.5); backdrop-filter: blur(10px);
+            min-height: 70px; display: flex; flex-direction: column; justify-content: center; align-items: center;
+            gap: 4px; flex-shrink: 0;
         }
 
-        .player-name {
-            font-size: 16px;
-            font-weight: 700;
-            color: var(--text-main);
-            word-break: break-word;
-            letter-spacing: -0.3px;
-        }
+        .player-name { font-size: 16px; font-weight: 700; color: var(--text-main); word-break: break-word; letter-spacing: -0.3px; width: 100%; }
+        .player-title { font-size: 12px; font-weight: 500; color: var(--text-sub); word-break: break-word; width: 100%; }
 
-        .player-title {
-            font-size: 12px;
-            font-weight: 500;
-            color: var(--text-sub);
-            word-break: break-word;
-        }
-
-        /* 选择指示器 - 简化设计 */
         .select-indicator {
-            position: absolute;
-            top: 10px;
-            right: 10px;
-            width: 28px;
-            height: 28px;
-            background: var(--success);
-            border: 3px solid white;
-            border-radius: 50%;
-            display: none;
-            align-items: center;
-            justify-content: center;
-            font-size: 16px;
-            font-weight: bold;
-            color: white;
-            box-shadow: 0 4px 12px rgba(52, 199, 89, 0.4);
-            z-index: 10;
+            position: absolute; top: 10px; right: 10px; width: 28px; height: 28px; background: var(--success);
+            border: 3px solid white; border-radius: 50%; display: none; align-items: center; justify-content: center;
+            font-size: 16px; font-weight: bold; color: white; box-shadow: 0 4px 12px rgba(52, 199, 89, 0.4); z-index: 10;
         }
+        
+        .player-card.selected .select-indicator { display: flex; animation: popIn 0.3s cubic-bezier(0.34, 1.56, 0.64, 1); }
+        @keyframes popIn { 0% { transform: scale(0); } 50% { transform: scale(1.1); } 100% { transform: scale(1); } }
 
-        .player-card.selected .select-indicator {
-            display: flex;
-            animation: popIn 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
-        }
-
-        @keyframes popIn {
-            0% {
-                transform: scale(0);
-            }
-            50% {
-                transform: scale(1.1);
-            }
-            100% {
-                transform: scale(1);
-            }
-        }
-
-        /* ============================================
-           对战卡片
-           ============================================ */
         .match-card {
-            background: var(--card-bg);
-            backdrop-filter: blur(10px);
-            border: 1px solid var(--glass-border);
-            border-radius: 20px;
-            padding: 16px;
-            margin: 12px 16px;
-            box-shadow: var(--shadow-sm);
-            transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+            background: var(--card-bg); backdrop-filter: blur(10px); border: 1px solid var(--glass-border); border-radius: 20px;
+            padding: 16px; margin: 12px 16px; box-shadow: var(--shadow-sm); transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
             will-change: transform;
         }
+        
+        .match-card:not(.completed) { cursor: pointer; }
+        .match-card:not(.completed):hover { transform: translateY(-2px); box-shadow: var(--shadow-md); background: rgba(255, 255, 255, 0.95); }
+        .match-card.completed { opacity: 0.6; background: rgba(255, 255, 255, 0.5); }
 
-        .match-card:not(.completed) {
-            cursor: pointer;
-        }
-
-        .match-card:not(.completed):hover {
-            transform: translateY(-2px);
-            box-shadow: var(--shadow-md);
-            background: rgba(255, 255, 255, 0.95);
-        }
-
-        .match-card.completed {
-            opacity: 0.6;
-            background: rgba(255, 255, 255, 0.5);
-        }
-
-        .match-row {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            gap: 12px;
-        }
-
-        .match-player {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            flex: 1;
-            gap: 8px;
-        }
+        .match-row { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
+        .match-player { display: flex; flex-direction: column; align-items: center; flex: 1; gap: 8px; }
 
         .match-avatar {
-            width: 56px;
-            height: 56px;
-            border-radius: 50%;
-            object-fit: cover;
-            border: 2px solid rgba(255, 255, 255, 0.8);
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-            background: linear-gradient(135deg, #E0E0E0 0%, #F0F0F0 100%);
+            width: 56px; height: 56px; border-radius: 50%; object-fit: cover; border: 2px solid rgba(255, 255, 255, 0.8);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1); background: linear-gradient(135deg, #E0E0E0 0%, #F0F0F0 100%); display: block;
         }
-
-        .match-avatar.error {
-            display: none;
-        }
+        
+        .match-avatar.hidden { display: none; }
 
         .match-avatar-placeholder {
-            width: 56px;
-            height: 56px;
-            border-radius: 50%;
-            border: 2px solid rgba(255, 255, 255, 0.8);
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-            background: linear-gradient(135deg, #E0E0E0 0%, #F0F0F0 100%);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 24px;
+            width: 56px; height: 56px; border-radius: 50%; border: 2px solid rgba(255, 255, 255, 0.8);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1); background: linear-gradient(135deg, #E0E0E0 0%, #F0F0F0 100%);
+            display: none; align-items: center; justify-content: center; font-size: 24px; font-weight: 700; color: rgba(0, 0, 0, 0.2);
         }
+        
+        .match-avatar-placeholder.show { display: flex; }
 
-        .match-name {
-            font-size: 14px;
-            font-weight: 600;
-            text-align: center;
-            word-break: break-word;
-            color: var(--text-main);
-        }
+        .match-name { font-size: 14px; font-weight: 600; text-align: center; word-break: break-word; color: var(--text-main); }
+        .match-vs { font-size: 13px; color: var(--text-sub); font-weight: 700; text-align: center; padding: 0 8px; letter-spacing: 1px; }
+        .match-score { font-size: 32px; font-weight: 800; color: var(--primary); margin-top: 12px; text-align: center; letter-spacing: -1px; }
 
-        .match-vs {
-            font-size: 13px;
-            color: var(--text-sub);
-            font-weight: 700;
-            text-align: center;
-            padding: 0 8px;
-            letter-spacing: 1px;
-        }
-
-        .match-score {
-            font-size: 32px;
-            font-weight: 800;
-            color: var(--primary);
-            margin-top: 12px;
-            text-align: center;
-            letter-spacing: -1px;
-        }
-
-        /* ============================================
-           排行榜
-           ============================================ */
         .rank-item {
-            display: flex;
-            align-items: center;
-            padding: 14px 16px;
-            background: var(--card-bg);
-            backdrop-filter: blur(10px);
-            border: 1px solid var(--glass-border);
-            margin: 8px 16px;
-            border-radius: 16px;
-            gap: 12px;
-            transition: all 0.2s ease;
-            box-shadow: var(--shadow-sm);
-            will-change: transform;
+            display: flex; align-items: center; padding: 14px 16px; background: var(--card-bg); backdrop-filter: blur(10px);
+            border: 1px solid var(--glass-border); margin: 8px 16px; border-radius: 16px; gap: 12px;
+            transition: all 0.2s ease; box-shadow: var(--shadow-sm); will-change: transform;
         }
+        
+        .rank-item:hover { transform: translateX(4px); box-shadow: var(--shadow-md); }
 
-        .rank-item:hover {
-            transform: translateX(4px);
-            box-shadow: var(--shadow-md);
-        }
-
-        .rank-num {
-            width: 40px;
-            font-size: 18px;
-            font-weight: 800;
-            color: var(--primary);
-            text-align: center;
-            flex-shrink: 0;
-        }
+        .rank-num { width: 40px; font-size: 18px; font-weight: 800; color: var(--primary); text-align: center; flex-shrink: 0; }
 
         .rank-avatar {
-            width: 48px;
-            height: 48px;
-            border-radius: 50%;
-            object-fit: cover;
-            border: 2px solid rgba(255, 255, 255, 0.8);
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
-            background: linear-gradient(135deg, #E0E0E0 0%, #F0F0F0 100%);
-            flex-shrink: 0;
+            width: 48px; height: 48px; border-radius: 50%; object-fit: cover; border: 2px solid rgba(255, 255, 255, 0.8);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08); background: linear-gradient(135deg, #E0E0E0 0%, #F0F0F0 100%); flex-shrink: 0; display: block;
         }
-
-        .rank-avatar.error {
-            display: none;
-        }
+        
+        .rank-avatar.hidden { display: none; }
 
         .rank-avatar-placeholder {
-            width: 48px;
-            height: 48px;
-            border-radius: 50%;
-            border: 2px solid rgba(255, 255, 255, 0.8);
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
-            background: linear-gradient(135deg, #E0E0E0 0%, #F0F0F0 100%);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 20px;
+            width: 48px; height: 48px; border-radius: 50%; border: 2px solid rgba(255, 255, 255, 0.8);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08); background: linear-gradient(135deg, #E0E0E0 0%, #F0F0F0 100%);
+            display: none; align-items: center; justify-content: center; font-size: 20px; font-weight: 700; color: rgba(0, 0, 0, 0.2);
             flex-shrink: 0;
         }
+        
+        .rank-avatar-placeholder.show { display: flex; }
 
-        .rank-info {
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-            gap: 2px;
-            min-width: 0;
-        }
+        .rank-info { flex: 1; display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+        .rank-info-name { font-size: 15px; font-weight: 700; color: var(--text-main); word-break: break-word; }
+        .rank-info-stats { font-size: 12px; color: var(--text-sub); font-weight: 500; }
+        .rank-points { font-size: 18px; font-weight: 800; color: var(--success); text-align: right; min-width: 50px; flex-shrink: 0; }
 
-        .rank-info-name {
-            font-size: 15px;
-            font-weight: 700;
-            color: var(--text-main);
-            word-break: break-word;
-        }
-
-        .rank-info-stats {
-            font-size: 12px;
-            color: var(--text-sub);
-            font-weight: 500;
-        }
-
-        .rank-points {
-            font-size: 18px;
-            font-weight: 800;
-            color: var(--success);
-            text-align: right;
-            min-width: 50px;
-            flex-shrink: 0;
-        }
-
-        /* ============================================
-           底部导航 - 液态玻璃设计
-           ============================================ */
         .bottom-nav {
-            position: fixed;
-            bottom: 0;
-            left: 50%;
-            transform: translateX(-50%);
-            width: 100%;
-            max-width: 430px;
-            height: 88px;
-            background: var(--glass-bg);
-            backdrop-filter: blur(var(--glass-blur));
-            border-top: 1px solid var(--glass-border);
-            display: flex;
-            padding-bottom: 24px;
-            padding-top: 12px;
-            z-index: 50;
-            box-shadow: 0 -4px 16px rgba(0, 0, 0, 0.05);
+            position: fixed; bottom: 0; left: 50%; transform: translateX(-50%); width: 100%; max-width: 430px; height: 88px;
+            background: var(--glass-bg); backdrop-filter: blur(var(--glass-blur)); border-top: 1px solid var(--glass-border);
+            display: flex; padding-bottom: 24px; padding-top: 12px; z-index: 50; box-shadow: 0 -4px 16px rgba(0, 0, 0, 0.05);
             flex-shrink: 0;
         }
 
         .nav-item {
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            color: var(--text-sub);
-            font-size: 10px;
-            cursor: pointer;
-            transition: all 0.2s ease;
-            gap: 4px;
-            user-select: none;
+            flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; color: var(--text-sub);
+            font-size: 10px; cursor: pointer; transition: all 0.2s ease; gap: 4px; user-select: none;
         }
+        
+        .nav-item.active { color: var(--primary); }
+        .nav-icon { font-size: 28px; line-height: 1; transition: transform 0.2s ease; }
+        .nav-item.active .nav-icon { transform: scale(1.1); }
 
-        .nav-item.active {
-            color: var(--primary);
-        }
-
-        .nav-icon {
-            font-size: 28px;
-            line-height: 1;
-            transition: transform 0.2s ease;
-        }
-
-        .nav-item.active .nav-icon {
-            transform: scale(1.1);
-        }
-
-        /* ============================================
-           弹窗 - 沉浸式液态玻璃
-           ============================================ */
         .modal {
-            display: none;
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.3);
-            backdrop-filter: blur(8px);
-            z-index: 200;
-            align-items: center;
-            justify-content: center;
-            animation: fadeIn 0.3s ease;
+            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.3);
+            backdrop-filter: blur(8px); z-index: 200; align-items: center; justify-content: center; animation: fadeIn 0.3s ease;
         }
-
-        .modal.active {
-            display: flex;
-        }
-
-        @keyframes fadeIn {
-            from {
-                opacity: 0;
-                backdrop-filter: blur(0);
-            }
-            to {
-                opacity: 1;
-                backdrop-filter: blur(8px);
-            }
-        }
+        
+        .modal.active { display: flex; }
+        @keyframes fadeIn { from { opacity: 0; backdrop-filter: blur(0); } to { opacity: 1; backdrop-filter: blur(8px); } }
 
         .modal-content {
-            background: var(--glass-bg);
-            backdrop-filter: blur(20px);
-            border: 1px solid var(--glass-border);
-            width: 85%;
-            max-width: 340px;
-            border-radius: 28px;
-            padding: 28px;
-            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
+            background: var(--glass-bg); backdrop-filter: blur(20px); border: 1px solid var(--glass-border);
+            width: 85%; max-width: 340px; border-radius: 28px; padding: 28px; box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
             animation: slideUp 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
         }
+        
+        @keyframes slideUp { from { transform: translateY(40px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
 
-        @keyframes slideUp {
-            from {
-                transform: translateY(40px);
-                opacity: 0;
-            }
-            to {
-                transform: translateY(0);
-                opacity: 1;
-            }
-        }
+        .modal-title { text-align: center; margin-bottom: 24px; font-size: 18px; font-weight: 700; color: var(--text-main); letter-spacing: -0.3px; }
 
-        .modal-title {
-            text-align: center;
-            margin-bottom: 24px;
-            font-size: 18px;
-            font-weight: 700;
-            color: var(--text-main);
-            letter-spacing: -0.3px;
-        }
-
-        .score-input-group {
-            display: flex;
-            justify-content: space-around;
-            align-items: center;
-            margin-bottom: 24px;
-            gap: 12px;
-        }
-
-        .score-player {
-            text-align: center;
-            flex: 1;
-        }
-
-        .score-player-name {
-            font-weight: 600;
-            margin-bottom: 12px;
-            color: var(--text-main);
-            word-break: break-word;
-            font-size: 14px;
-        }
+        .score-input-group { display: flex; justify-content: space-around; align-items: center; margin-bottom: 24px; gap: 12px; }
+        .score-player { text-align: center; flex: 1; }
+        .score-player-name { font-weight: 600; margin-bottom: 12px; color: var(--text-main); word-break: break-word; font-size: 14px; }
 
         .score-input {
-            width: 70px;
-            padding: 12px;
-            text-align: center;
-            font-size: 18px;
-            font-weight: 700;
-            border: 2px solid var(--glass-border);
-            background: rgba(255, 255, 255, 0.5);
-            border-radius: 12px;
-            outline: none;
-            transition: all 0.2s ease;
+            width: 70px; padding: 12px; text-align: center; font-size: 18px; font-weight: 700;
+            border: 2px solid var(--glass-border); background: rgba(255, 255, 255, 0.5); border-radius: 12px; outline: none; transition: all 0.2s ease;
         }
+        
+        .score-input:focus { border-color: var(--primary); background: rgba(255, 255, 255, 0.9); box-shadow: 0 0 0 4px rgba(0, 122, 255, 0.1); }
 
-        .score-input:focus {
-            border-color: var(--primary);
-            background: rgba(255, 255, 255, 0.9);
-            box-shadow: 0 0 0 4px rgba(0, 122, 255, 0.1);
-        }
+        .score-vs { font-weight: 800; font-size: 16px; color: var(--text-sub); padding: 0 8px; }
 
-        .score-vs {
-            font-weight: 800;
-            font-size: 16px;
-            color: var(--text-sub);
-            padding: 0 8px;
-        }
-
-        /* ============================================
-           按钮 - iOS 风格
-           ============================================ */
         .btn-full {
-            width: 100%;
-            background: var(--primary);
-            color: white;
-            border: none;
-            border-radius: 14px;
-            padding: 14px 20px;
-            font-size: 16px;
-            font-weight: 700;
-            cursor: pointer;
-            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-            margin-top: 12px;
-            box-shadow: 0 4px 12px rgba(0, 122, 255, 0.3);
-            letter-spacing: -0.3px;
+            width: 100%; background: var(--primary); color: white; border: none; border-radius: 14px; padding: 14px 20px;
+            font-size: 16px; font-weight: 700; cursor: pointer; transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            margin-top: 12px; box-shadow: 0 4px 12px rgba(0, 122, 255, 0.3); letter-spacing: -0.3px;
         }
+        
+        .btn-full:active { transform: scale(0.95); box-shadow: 0 2px 8px rgba(0, 122, 255, 0.2); }
+        .btn-full.secondary { background: rgba(0, 0, 0, 0.05); color: var(--danger); border: 1px solid var(--glass-border); box-shadow: none; margin-top: 8px; }
+        .btn-full.secondary:active { background: rgba(0, 0, 0, 0.08); }
 
-        .btn-full:active {
-            transform: scale(0.95);
-            box-shadow: 0 2px 8px rgba(0, 122, 255, 0.2);
-        }
+        .empty-state { display: flex; align-items: center; justify-content: center; padding: 60px 20px; color: var(--text-sub); font-size: 15px; text-align: center; min-height: 300px; flex: 1; }
 
-        .btn-full.secondary {
-            background: rgba(0, 0, 0, 0.05);
-            color: var(--danger);
-            border: 1px solid var(--glass-border);
-            box-shadow: none;
-            margin-top: 8px;
-        }
-
-        .btn-full.secondary:active {
-            background: rgba(0, 0, 0, 0.08);
-        }
-
-        /* ============================================
-           空状态
-           ============================================ */
-        .empty-state {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            padding: 60px 20px;
-            color: var(--text-sub);
-            font-size: 15px;
-            text-align: center;
-            min-height: 300px;
-            flex: 1;
-        }
-
-        /* ============================================
-           Toast 通知
-           ============================================ */
         .toast {
-            position: fixed;
-            bottom: 120px;
-            left: 50%;
-            transform: translateX(-50%);
-            background: rgba(0, 0, 0, 0.85);
-            backdrop-filter: blur(10px);
-            color: white;
-            padding: 12px 24px;
-            border-radius: 12px;
-            font-size: 14px;
-            font-weight: 600;
-            z-index: 300;
-            animation: slideUp 0.3s ease;
-            max-width: 300px;
-            text-align: center;
+            position: fixed; bottom: 120px; left: 50%; transform: translateX(-50%); background: rgba(0, 0, 0, 0.85);
+            backdrop-filter: blur(10px); color: white; padding: 12px 24px; border-radius: 12px; font-size: 14px;
+            font-weight: 600; z-index: 300; animation: slideUp 0.3s ease; max-width: 300px; text-align: center;
         }
 
-        /* ============================================
-           响应式设计
-           ============================================ */
         @media (max-width: 375px) {
-            .grid-container {
-                gap: 10px;
-                padding: 12px;
-            }
-
-            .player-card {
-                height: 180px;
-            }
-
-            .match-card {
-                padding: 12px;
-                margin: 10px 12px;
-            }
-
-            .rank-item {
-                padding: 12px;
-                margin: 6px 12px;
-            }
+            .grid-container { gap: 10px; padding: 12px; }
+            .player-card { height: 180px; }
+            .match-card { padding: 12px; margin: 10px 12px; }
+            .rank-item { padding: 12px; margin: 6px 12px; }
         }
     </style>
 </head>
 <body>
 
 <div id="app">
-    <!-- 顶部导航栏 -->
     <header class="header">
         <div class="brand">多运动</div>
         <div id="header-actions"></div>
     </header>
 
-    <!-- 球员列表视图 -->
     <div id="view-players" class="view active">
         <div class="grid-container" id="player-grid"></div>
     </div>
 
-    <!-- 对战列表视图 -->
     <div id="view-matches" class="view">
         <div id="match-list"></div>
     </div>
 
-    <!-- 排行榜视图 -->
     <div id="view-rank" class="view">
         <div id="rank-list"></div>
     </div>
 
-    <!-- 底部导航栏 -->
     <nav class="bottom-nav">
         <div class="nav-item active" onclick="App.showView('view-players')">
             <span class="nav-icon">👤</span>
@@ -780,7 +277,6 @@
         </div>
     </nav>
 
-    <!-- 比分输入弹窗 -->
     <div class="modal" id="score-modal">
         <div class="modal-content">
             <div class="modal-title">登记比赛比分</div>
@@ -802,95 +298,41 @@
 </div>
 
 <script>
-    // ============================================
-    // 应用核心逻辑 - iOS 26 设计实现
-    // ============================================
     const App = {
-        // 预设球员数据
-        // 更新后的球员数据数组（在代码的第810-827行）：
-players: [
-    {
-        id: 1,
-        name: "阿水",
-        title: "摸鱼小弟",
-        avatar: "https://p3-sign.toutiaoimg.com/tos-cn-i-qvj2lq49k0/9c8de3f5f8e44d5a98d5e5d5e5d5e5d5~noop.image?from=post",
-        wins: 0,
-        played: 0
-    },
-    {
-        id: 2,
-        name: "高总",
-        title: "一击必杀",
-        avatar: "https://p3-sign.toutiaoimg.com/tos-cn-i-qvj2lq49k0/d1e2f3f4g5h6i7j8k9l0~noop.image?from=post",
-        wins: 0,
-        played: 0
-    },
-    {
-        id: 3,
-        name: "C炜",
-        title: "旋风小霸王",
-        avatar: "https://p3-sign.toutiaoimg.com/tos-cn-i-qvj2lq49k0/a1b2c3d4e5f6g7h8i9j0~noop.image?from=post",
-        wins: 0,
-        played: 0
-    },
-    {
-        id: 4,
-        name: "鸿哥",
-        title: "大师选手",
-        avatar: "https://p3-sign.toutiaoimg.com/tos-cn-i-qvj2lq49k0/x1y2z3a4b5c6d7e8f9g0~noop.image?from=post",
-        wins: 0,
-        played: 0
-    }
-],
+        players: [
+            { id: 1, name: "阿水", title: "摸鱼小弟", avatar: "https://p3-sign.toutiaoimg.com/tos-cn-i-qvj2lq49k0/9c8de3f5f8e44d5a98d5e5d5e5d5e5d5~noop.image?from=post", wins: 0, played: 0 },
+            { id: 2, name: "高总", title: "一击必杀", avatar: "https://p3-sign.toutiaoimg.com/tos-cn-i-qvj2lq49k0/d1e2f3f4g5h6i7j8k9l0~noop.image?from=post", wins: 0, played: 0 },
+            { id: 3, name: "C炜", title: "旋风小霸王", avatar: "https://p3-sign.toutiaoimg.com/tos-cn-i-qvj2lq49k0/a1b2c3d4e5f6g7h8i9j0~noop.image?from=post", wins: 0, played: 0 },
+            { id: 4, name: "鸿哥", title: "大师选手", avatar: "https://p3-sign.toutiaoimg.com/tos-cn-i-qvj2lq49k0/x1y2z3a4b5c6d7e8f9g0~noop.image?from=post", wins: 0, played: 0 }
+        ],
         
         matches: [],
         selectedIds: [],
         currentMatchId: null,
         rankedCache: null,
 
-        // 初始化应用
-        init() {
-            this.loadData();
-            this.showView('view-players');
-        },
+        init() { this.loadData(); this.showView('view-players'); },
 
-        // 加载本地存储数据
         loadData() {
             try {
                 const stored = localStorage.getItem('sports_matches');
                 this.matches = stored ? JSON.parse(stored) : [];
-            } catch (e) {
-                console.error('数据加载失败:', e);
-                this.matches = [];
-            }
+            } catch (e) { console.error('数据加载失败:', e); this.matches = []; }
         },
 
-        // 保存数据到本地存储
         saveData() {
-            try {
-                localStorage.setItem('sports_matches', JSON.stringify(this.matches));
-            } catch (e) {
-                console.error('数据保存失败:', e);
-                this.showToast('数据保存失败');
-            }
+            try { localStorage.setItem('sports_matches', JSON.stringify(this.matches)); }
+            catch (e) { console.error('数据保存失败:', e); this.showToast('数据保存失败'); }
         },
 
-        // ============================================
-        // 视图管理
-        // ============================================
         showView(viewId) {
-            // 隐藏所有视图
             document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
             document.getElementById(viewId).classList.add('active');
 
-            // 更新导航栏
             const navItems = document.querySelectorAll('.nav-item');
             const viewMap = ['view-players', 'view-matches', 'view-rank'];
-            navItems.forEach((item, idx) => {
-                item.classList.toggle('active', viewId === viewMap[idx]);
-            });
+            navItems.forEach((item, idx) => { item.classList.toggle('active', viewId === viewMap[idx]); });
 
-            // 动态更新顶部按钮
             const headerBtn = document.getElementById('header-actions');
             if (viewId === 'view-players') {
                 headerBtn.innerHTML = `<button class="header-btn highlight" onclick="App.startTournament()">开始比赛</button>`;
@@ -904,17 +346,16 @@ players: [
             }
         },
 
-        // ============================================
-        // 球员管理
-        // ============================================
         renderPlayers() {
             const grid = document.getElementById('player-grid');
             grid.innerHTML = this.players.map(p => {
                 const initial = p.name[0];
                 return `
                     <div class="player-card ${this.selectedIds.includes(p.id) ? 'selected' : ''}" onclick="App.toggleSelect(${p.id})">
-                        <img src="${p.avatar}" class="player-img" alt="${this.escapeHtml(p.name)}" onerror="this.style.display='none';this.parentElement.querySelector('.player-img-placeholder').style.display='flex'">
-                        <div class="player-img-placeholder" style="display:none">${initial}</div>
+                        <div class="player-img-wrapper">
+                            <img src="${p.avatar}" class="player-img" alt="${this.escapeHtml(p.name)}" onerror="this.classList.add('hidden');this.parentElement.querySelector('.player-img-placeholder').classList.remove('hidden')">
+                            <div class="player-img-placeholder hidden">${initial}</div>
+                        </div>
                         <div class="player-info">
                             <div class="player-name">${this.escapeHtml(p.name)}</div>
                             <div class="player-title">${this.escapeHtml(p.title)}</div>
@@ -927,36 +368,24 @@ players: [
 
         toggleSelect(id) {
             const idx = this.selectedIds.indexOf(id);
-            if (idx > -1) {
-                this.selectedIds.splice(idx, 1);
-            } else {
-                this.selectedIds.push(id);
-            }
+            if (idx > -1) { this.selectedIds.splice(idx, 1); }
+            else { this.selectedIds.push(id); }
             this.renderPlayers();
         },
 
-        // ============================================
-        // 赛事管理
-        // ============================================
         startTournament() {
-            if (this.selectedIds.length < 2) {
-                this.showToast("请至少选择2位球员");
-                return;
-            }
+            if (this.selectedIds.length < 2) { this.showToast("请至少选择2位球员"); return; }
 
             this.matches = [];
             let matchCount = 0;
 
-            // 生成全循环赛程
             for (let i = 0; i < this.selectedIds.length; i++) {
                 for (let j = i + 1; j < this.selectedIds.length; j++) {
                     this.matches.push({
                         id: Date.now() + i * 1000 + j,
                         p1Id: this.selectedIds[i],
                         p2Id: this.selectedIds[j],
-                        s1: null,
-                        s2: null,
-                        done: false
+                        s1: null, s2: null, done: false
                     });
                     matchCount++;
                 }
@@ -968,16 +397,11 @@ players: [
             this.showView('view-matches');
         },
 
-        getPlayerById(id) {
-            return this.players.find(p => p.id === id);
-        },
+        getPlayerById(id) { return this.players.find(p => p.id === id); },
 
         renderMatches() {
             const list = document.getElementById('match-list');
-            if (this.matches.length === 0) {
-                list.innerHTML = `<div class="empty-state">去"球员"页面选择对手开始比赛</div>`;
-                return;
-            }
+            if (this.matches.length === 0) { list.innerHTML = `<div class="empty-state">去"球员"页面选择对手开始比赛</div>`; return; }
 
             list.innerHTML = this.matches.map(m => {
                 const p1 = this.getPlayerById(m.p1Id);
@@ -991,14 +415,14 @@ players: [
                     <div class="match-card ${m.done ? 'completed' : ''}" ${!m.done ? `onclick="App.openScore(${m.id})"` : ''}>
                         <div class="match-row">
                             <div class="match-player">
-                                <img src="${p1.avatar}" class="match-avatar" alt="${this.escapeHtml(p1.name)}" onerror="this.style.display='none';this.parentElement.querySelector('.match-avatar-placeholder').style.display='flex'">
-                                <div class="match-avatar-placeholder" style="display:none">${p1Initial}</div>
+                                <img src="${p1.avatar}" class="match-avatar" alt="${this.escapeHtml(p1.name)}" onerror="this.classList.add('hidden');this.parentElement.querySelector('.match-avatar-placeholder').classList.add('show')">
+                                <div class="match-avatar-placeholder">${p1Initial}</div>
                                 <div class="match-name">${this.escapeHtml(p1.name)}</div>
                             </div>
                             <div class="match-vs">${m.done ? '已完赛' : '未开始'}</div>
                             <div class="match-player">
-                                <img src="${p2.avatar}" class="match-avatar" alt="${this.escapeHtml(p2.name)}" onerror="this.style.display='none';this.parentElement.querySelector('.match-avatar-placeholder').style.display='flex'">
-                                <div class="match-avatar-placeholder" style="display:none">${p2Initial}</div>
+                                <img src="${p2.avatar}" class="match-avatar" alt="${this.escapeHtml(p2.name)}" onerror="this.classList.add('hidden');this.parentElement.querySelector('.match-avatar-placeholder').classList.add('show')">
+                                <div class="match-avatar-placeholder">${p2Initial}</div>
                                 <div class="match-name">${this.escapeHtml(p2.name)}</div>
                             </div>
                         </div>
@@ -1029,18 +453,12 @@ players: [
             const s1Str = document.getElementById('m-s1').value.trim();
             const s2Str = document.getElementById('m-s2').value.trim();
 
-            if (!s1Str || !s2Str) {
-                this.showToast("请输入完整比分");
-                return;
-            }
+            if (!s1Str || !s2Str) { this.showToast("请输入完整比分"); return; }
 
             const s1 = parseInt(s1Str);
             const s2 = parseInt(s2Str);
 
-            if (isNaN(s1) || isNaN(s2) || s1 < 0 || s2 < 0) {
-                this.showToast("请输入有效的比分");
-                return;
-            }
+            if (isNaN(s1) || isNaN(s2) || s1 < 0 || s2 < 0) { this.showToast("请输入有效的比分"); return; }
 
             const match = this.matches.find(m => m.id === this.currentMatchId);
             if (!match) return;
@@ -1049,20 +467,15 @@ players: [
             const p2 = this.getPlayerById(match.p2Id);
             if (!p1 || !p2) return;
 
-            // 更新比赛数据
             match.s1 = s1;
             match.s2 = s2;
             match.done = true;
 
-            // 更新球员数据
             p1.played++;
             p2.played++;
 
-            if (s1 > s2) {
-                p1.wins++;
-            } else if (s2 > s1) {
-                p2.wins++;
-            }
+            if (s1 > s2) { p1.wins++; }
+            else if (s2 > s1) { p2.wins++; }
 
             this.saveData();
             this.rankedCache = null;
@@ -1078,7 +491,6 @@ players: [
 
         clearMatches() {
             if (!confirm("确定要重置当前赛事吗？")) return;
-            
             this.matches = [];
             this.selectedIds = [];
             this.saveData();
@@ -1087,9 +499,6 @@ players: [
             this.renderMatches();
         },
 
-        // ============================================
-        // 排行榜
-        // ============================================
         renderRank() {
             const list = document.getElementById('rank-list');
             const sorted = this.getRankedPlayers();
@@ -1100,8 +509,8 @@ players: [
                 return `
                     <div class="rank-item">
                         <div class="rank-num">${i + 1}</div>
-                        <img src="${p.avatar}" class="rank-avatar" alt="${this.escapeHtml(p.name)}" onerror="this.style.display='none';this.parentElement.querySelector('.rank-avatar-placeholder').style.display='flex'">
-                        <div class="rank-avatar-placeholder" style="display:none">${initial}</div>
+                        <img src="${p.avatar}" class="rank-avatar" alt="${this.escapeHtml(p.name)}" onerror="this.classList.add('hidden');this.parentElement.querySelector('.rank-avatar-placeholder').classList.add('show')">
+                        <div class="rank-avatar-placeholder">${initial}</div>
                         <div class="rank-info">
                             <div class="rank-info-name">${this.escapeHtml(p.name)}</div>
                             <div class="rank-info-stats">出战 ${p.played} 场 · 胜率 ${winRate}%</div>
@@ -1124,9 +533,6 @@ players: [
             return this.rankedCache;
         },
 
-        // ============================================
-        // 工具函数
-        // ============================================
         showToast(message) {
             const toast = document.createElement('div');
             toast.className = 'toast';
@@ -1141,18 +547,11 @@ players: [
 
         escapeHtml(text) {
             if (typeof text !== 'string') return '';
-            const map = {
-                '&': '&amp;',
-                '<': '&lt;',
-                '>': '&gt;',
-                '"': '&quot;',
-                "'": '&#039;'
-            };
+            const map = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' };
             return text.replace(/[&<>"']/g, m => map[m]);
         }
     };
 
-    // 应用启动
     document.addEventListener('DOMContentLoaded', () => App.init());
 </script>
 
