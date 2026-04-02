@@ -323,7 +323,9 @@
             { id: 1, name: "阿水", title: "摸鱼小弟", avatar: "https://github.com/ywingsui-max/yumaoqiu-assets/blob/main/as.jpg?raw=true", wins: 0, played: 0, totalScore: 0 },
             { id: 2, name: "高总", title: "一击必杀", avatar: "https://github.com/ywingsui-max/yumaoqiu-assets/blob/main/gz.jpg?raw=true", wins: 0, played: 0, totalScore: 0 },
             { id: 3, name: "C炜", title: "旋风小霸王", avatar: "https://github.com/ywingsui-max/yumaoqiu-assets/blob/main/cwei.jpg?raw=true", wins: 0, played: 0, totalScore: 0 },
-            { id: 4, name: "鸿哥", title: "大师选手", avatar: "https://github.com/ywingsui-max/yumaoqiu-assets/blob/main/ch.jpg?raw=true", wins: 0, played: 0, totalScore: 0 }
+            { id: 4, name: "鸿哥", title: "大师选手", avatar: "https://github.com/ywingsui-max/yumaoqiu-assets/blob/main/ch.jpg?raw=true", wins: 0, played: 0, totalScore: 0 },
+            { id: 5, name: "春阳", title: "青阳剑客", avatar: "https://github.com/ywingsui-max/yumaoqiu-assets/blob/main/cy.jpg?raw=true", wins: 0, played: 0, totalScore: 0 },
+            { id: 6, name: "蕭", title: "敏思剑君", avatar: "https://github.com/ywingsui-max/yumaoqiu-assets/blob/main/jm.jpg?raw=true", wins: 0, played: 0, totalScore: 0 }
         ],
         
         matches: [],
@@ -339,7 +341,17 @@
                 if (stored) {
                     const data = JSON.parse(stored);
                     this.matches = data.matches || [];
-                    this.players = data.players || this.players;
+                    // 合并已保存的球员数据和新增球员
+                    if (data.players && data.players.length > 0) {
+                        data.players.forEach(savedPlayer => {
+                            const existingPlayer = this.players.find(p => p.id === savedPlayer.id);
+                            if (existingPlayer) {
+                                existingPlayer.wins = savedPlayer.wins;
+                                existingPlayer.played = savedPlayer.played;
+                                existingPlayer.totalScore = savedPlayer.totalScore;
+                            }
+                        });
+                    }
                 } else {
                     this.matches = [];
                 }
@@ -495,7 +507,7 @@
             const s1 = parseInt(s1Str);
             const s2 = parseInt(s2Str);
 
-            if (isNaN(s1) || isNaN(s2) || s1 < 0 || s2 < 0) { this.showToast("请输入��效的比分"); return; }
+            if (isNaN(s1) || isNaN(s2) || s1 < 0 || s2 < 0) { this.showToast("请输入有效的比分"); return; }
 
             const match = this.matches.find(m => m.id === this.currentMatchId);
             if (!match) return;
