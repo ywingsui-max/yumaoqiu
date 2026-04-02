@@ -1,0 +1,1043 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>多运动 - 赛事系统</title>
+    <style>
+        /* --- 核心变量与重置 --- */
+        :root {
+            --primary: #007AFF;
+            --success: #34C759;
+            --bg: #F2F2F7;
+            --card-bg: #FFFFFF;
+            --text-main: #000000;
+            --text-sub: #8E8E93;
+            --border: #E5E5EA;
+            --danger: #FF3B30;
+        }
+        
+        * { 
+            box-sizing: border-box; 
+            margin: 0; 
+            padding: 0; 
+            -webkit-tap-highlight-color: transparent; 
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background-color: #333; 
+            display: flex; 
+            justify-content: center; 
+            min-height: 100vh;
+        }
+        
+        #app {
+            width: 100%; 
+            max-width: 430px; 
+            background-color: var(--bg);
+            min-height: 100vh; 
+            position: relative; 
+            display: flex; 
+            flex-direction: column;
+            overflow-x: hidden; 
+            box-shadow: 0 0 20px rgba(0,0,0,0.5);
+        }
+        
+        /* --- 视图切换 --- */
+        .view { 
+            display: none; 
+            flex: 1; 
+            padding-bottom: 90px; 
+            overflow-y: auto; 
+            background: var(--bg); 
+        }
+        .view.active { 
+            display: block; 
+            animation: fadeIn 0.25s ease; 
+        }
+        @keyframes fadeIn { 
+            from { opacity: 0; } 
+            to { opacity: 1; } 
+        }
+
+        /* --- 顶部导航栏 --- */
+        .header {
+            height: 60px; 
+            background: rgba(255,255,255,0.9); 
+            backdrop-filter: blur(10px);
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center;
+            padding: 0 20px; 
+            position: sticky; 
+            top: 0; 
+            z-index: 10; 
+            border-bottom: 1px solid var(--border);
+        }
+        
+        .brand { 
+            font-size: 20px; 
+            font-weight: 700; 
+            color: var(--text-main); 
+        }
+        
+        .header-btn { 
+            font-size: 16px; 
+            font-weight: 500; 
+            color: var(--primary); 
+            cursor: pointer; 
+            border: none; 
+            background: none;
+            padding: 6px 12px;
+            border-radius: 6px;
+            transition: all 0.2s;
+        }
+        
+        .header-btn:active {
+            opacity: 0.7;
+        }
+        
+        .header-btn.highlight { 
+            color: #fff; 
+            background: var(--success); 
+            padding: 6px 16px; 
+            border-radius: 16px; 
+            font-weight: 600;
+        }
+
+        /* --- 页面一：球员卡片网格 --- */
+        .grid-container {
+            display: grid; 
+            grid-template-columns: 1fr 1fr; 
+            gap: 15px; 
+            padding: 15px;
+        }
+        
+        .player-card {
+            background: var(--card-bg); 
+            border-radius: 16px; 
+            overflow: hidden;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05); 
+            position: relative;
+            display: flex; 
+            flex-direction: column; 
+            cursor: pointer; 
+            transition: transform 0.1s;
+            height: 200px;
+        }
+        
+        .player-card:active { 
+            transform: scale(0.96); 
+        }
+        
+        .player-img { 
+            flex: 1; 
+            width: 100%; 
+            object-fit: cover; 
+            background: #e0e0e0; 
+        }
+        
+        .player-info { 
+            padding: 12px; 
+            text-align: center; 
+            background: var(--card-bg);
+            min-height: 60px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+        
+        .player-name { 
+            font-size: 16px; 
+            font-weight: 600; 
+            margin-bottom: 4px; 
+            color: var(--text-main);
+            word-break: break-word;
+        }
+        
+        .player-title { 
+            font-size: 12px; 
+            color: var(--text-sub);
+            word-break: break-word;
+        }
+        
+        /* 选择态遮罩 */
+        .select-mask {
+            position: absolute; 
+            top: 0; 
+            left: 0; 
+            width: 100%; 
+            height: 100%;
+            background: rgba(0,0,0,0.2); 
+            display: none; 
+            align-items: center; 
+            justify-content: center;
+        }
+        
+        .select-mask::after {
+            content: '✓'; 
+            color: white; 
+            font-size: 24px; 
+            font-weight: bold;
+            width: 32px; 
+            height: 32px; 
+            background: var(--success); 
+            border-radius: 50%;
+            display: flex; 
+            align-items: center; 
+            justify-content: center;
+            border: 2px solid #fff;
+        }
+        
+        .player-card.selected { 
+            border: 3px solid var(--success); 
+        }
+        
+        .player-card.selected .select-mask { 
+            display: flex; 
+        }
+
+        /* --- 编辑球员页面 --- */
+        .edit-header { 
+            text-align: center; 
+            padding: 30px 20px 20px; 
+        }
+        
+        .avatar-upload-wrap { 
+            position: relative; 
+            width: 120px; 
+            height: 120px; 
+            margin: 0 auto; 
+            cursor: pointer;
+        }
+        
+        .avatar-preview {
+            width: 120px; 
+            height: 120px; 
+            border-radius: 60px; 
+            object-fit: cover;
+            border: 3px solid var(--border); 
+            background: #e0e0e0;
+            display: block;
+        }
+        
+        .file-input { 
+            position: absolute; 
+            top: 0; 
+            left: 0; 
+            width: 100%; 
+            height: 100%; 
+            opacity: 0; 
+            cursor: pointer; 
+        }
+        
+        .upload-hint { 
+            font-size: 13px; 
+            color: var(--primary); 
+            margin-top: 12px; 
+            display: block; 
+            text-align: center;
+        }
+        
+        .form-group { 
+            padding: 0 20px; 
+            margin-bottom: 20px; 
+        }
+        
+        .form-group label { 
+            display: block; 
+            font-size: 14px; 
+            color: var(--text-sub); 
+            margin-bottom: 8px; 
+            font-weight: 500;
+        }
+        
+        .input-field {
+            width: 100%; 
+            padding: 12px 16px; 
+            border-radius: 12px; 
+            border: 1px solid var(--border);
+            font-size: 16px; 
+            outline: none; 
+            background: var(--card-bg);
+            transition: border-color 0.2s;
+        }
+        
+        .input-field:focus { 
+            border-color: var(--primary); 
+            box-shadow: 0 0 0 3px rgba(0, 122, 255, 0.1);
+        }
+        
+        .btn-full {
+            margin: 20px; 
+            width: calc(100% - 40px); 
+            background: var(--primary); 
+            color: white;
+            border: none; 
+            border-radius: 14px; 
+            padding: 16px; 
+            font-size: 17px; 
+            font-weight: 600;
+            cursor: pointer; 
+            transition: all 0.2s;
+            display: block;
+        }
+        
+        .btn-full:active { 
+            opacity: 0.8; 
+            transform: scale(0.98);
+        }
+        
+        .btn-full.secondary {
+            background: none; 
+            color: var(--text-sub); 
+            border: 1px solid var(--border); 
+            margin-top: -10px;
+        }
+
+        /* --- 页面二：对战系统 --- */
+        .match-card {
+            background: var(--card-bg); 
+            border-radius: 16px; 
+            padding: 16px;
+            margin: 15px; 
+            box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+            transition: all 0.2s;
+        }
+        
+        .match-card:not(.completed) {
+            cursor: pointer;
+        }
+        
+        .match-card.completed {
+            opacity: 0.7;
+        }
+        
+        .match-row { 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center; 
+        }
+        
+        .match-player { 
+            display: flex; 
+            flex-direction: column; 
+            align-items: center; 
+            width: 35%; 
+        }
+        
+        .match-avatar { 
+            width: 50px; 
+            height: 50px; 
+            border-radius: 25px; 
+            object-fit: cover; 
+            margin-bottom: 8px; 
+            background: #eee;
+        }
+        
+        .match-name { 
+            font-size: 15px; 
+            font-weight: 600; 
+            text-align: center;
+            word-break: break-word;
+        }
+        
+        .match-vs { 
+            font-size: 13px; 
+            color: var(--text-sub); 
+            font-weight: bold; 
+            width: 30%; 
+            text-align: center;
+        }
+        
+        .match-score { 
+            font-size: 28px; 
+            font-weight: 800; 
+            color: var(--primary); 
+            margin-top: 12px; 
+            text-align: center;
+        }
+
+        /* --- 页面三：排行 --- */
+        .rank-item {
+            display: flex; 
+            align-items: center; 
+            padding: 15px 20px;
+            background: white; 
+            border-bottom: 1px solid var(--border);
+        }
+        
+        .rank-num { 
+            width: 40px; 
+            font-size: 18px; 
+            font-weight: 800; 
+            color: var(--text-sub); 
+        }
+        
+        .rank-avatar { 
+            width: 40px; 
+            height: 40px; 
+            border-radius: 20px; 
+            margin-right: 15px; 
+            object-fit: cover; 
+            background: #eee;
+        }
+        
+        .rank-info { 
+            flex: 1; 
+        }
+        
+        .rank-info-name {
+            font-size: 16px;
+            font-weight: 600;
+            color: var(--text-main);
+            word-break: break-word;
+        }
+        
+        .rank-info-stats {
+            font-size: 12px; 
+            color: var(--text-sub);
+            margin-top: 2px;
+        }
+        
+        .rank-points { 
+            font-size: 18px; 
+            font-weight: 700; 
+            color: var(--primary); 
+        }
+
+        /* --- 底部导航 --- */
+        .bottom-nav {
+            position: absolute; 
+            bottom: 0; 
+            width: 100%; 
+            height: 84px;
+            background: rgba(255,255,255,0.9); 
+            backdrop-filter: blur(10px);
+            border-top: 1px solid var(--border); 
+            display: flex; 
+            padding-bottom: 20px;
+        }
+        
+        .nav-item { 
+            flex: 1; 
+            display: flex; 
+            flex-direction: column; 
+            align-items: center; 
+            justify-content: center; 
+            color: var(--text-sub); 
+            font-size: 10px;
+            cursor: pointer;
+            transition: color 0.2s;
+        }
+        
+        .nav-item.active { 
+            color: var(--primary); 
+        }
+        
+        .nav-icon { 
+            font-size: 24px; 
+            margin-bottom: 2px; 
+        }
+
+        /* 弹窗 */
+        .modal {
+            display: none; 
+            position: fixed; 
+            top: 0; 
+            left: 0; 
+            width: 100%; 
+            height: 100%;
+            background: rgba(0,0,0,0.5); 
+            z-index: 100; 
+            align-items: center; 
+            justify-content: center;
+            animation: fadeIn 0.2s ease;
+        }
+        
+        .modal.active { 
+            display: flex; 
+        }
+        
+        .modal-content { 
+            background: white; 
+            width: 85%; 
+            border-radius: 20px; 
+            padding: 25px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+        }
+        
+        .modal-title { 
+            text-align: center; 
+            margin-bottom: 20px; 
+            font-size: 18px; 
+            font-weight: 600; 
+        }
+        
+        .score-input-group { 
+            display: flex; 
+            justify-content: space-around; 
+            align-items: center; 
+            margin-bottom: 20px; 
+        }
+        
+        .score-player {
+            text-align: center;
+            flex: 1;
+        }
+        
+        .score-player-name { 
+            font-weight: 600; 
+            margin-bottom: 10px;
+            word-break: break-word;
+        }
+        
+        .score-input { 
+            width: 80px; 
+            text-align: center;
+        }
+        
+        .score-vs {
+            flex: 0.3;
+            font-weight: bold;
+        }
+
+        /* 错误提示 */
+        .toast {
+            position: fixed; 
+            bottom: 100px; 
+            left: 50%; 
+            transform: translateX(-50%);
+            background: rgba(0,0,0,0.8); 
+            color: white; 
+            padding: 12px 20px;
+            border-radius: 8px; 
+            font-size: 14px; 
+            z-index: 200;
+            animation: slideUp 0.3s ease;
+            max-width: 300px;
+            text-align: center;
+        }
+        
+        @keyframes slideUp { 
+            from { 
+                transform: translateX(-50%) translateY(50px); 
+                opacity: 0; 
+            } 
+            to { 
+                transform: translateX(-50%) translateY(0); 
+                opacity: 1; 
+            } 
+        }
+        
+        .empty-state {
+            text-align: center; 
+            padding: 50px 20px; 
+            color: var(--text-sub);
+        }
+    </style>
+</head>
+<body>
+
+<div id="app">
+    <header class="header">
+        <div class="brand">多运动</div>
+        <div id="header-actions"></div>
+    </header>
+
+    <!-- 球员列表页面 -->
+    <div id="view-players" class="view active">
+        <div class="grid-container" id="player-grid"></div>
+        <button class="btn-full" onclick="App.showEditView()">+ 添加新球员</button>
+    </div>
+
+    <!-- 编辑球员页面 -->
+    <div id="view-edit" class="view">
+        <div class="edit-header">
+            <div class="avatar-upload-wrap" onclick="document.getElementById('avatar-input').click()">
+                <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 120 120'%3E%3Crect fill='%23e0e0e0' width='120' height='120'/%3E%3Ctext x='50%25' y='50%25' font-size='40' fill='%23999' text-anchor='middle' dy='.3em'%3E+%3C/text%3E%3C/svg%3E" id="avatar-preview" class="avatar-preview" alt="头像">
+                <input type="file" id="avatar-input" class="file-input" accept="image/*">
+            </div>
+            <span class="upload-hint">点击上传头像</span>
+        </div>
+        <div class="form-group">
+            <label>球员昵称 *</label>
+            <input type="text" id="p-name" class="input-field" placeholder="输入昵称" maxlength="20">
+        </div>
+        <div class="form-group">
+            <label>球员头衔</label>
+            <input type="text" id="p-title" class="input-field" placeholder="如：后场重炮手 / 摸鱼大师" maxlength="30">
+        </div>
+        <button class="btn-full" onclick="App.savePlayer()">保存档案</button>
+        <button class="btn-full secondary" onclick="App.showView('view-players')">取消</button>
+    </div>
+
+    <!-- 对战列表页面 -->
+    <div id="view-matches" class="view">
+        <div id="match-list"></div>
+    </div>
+
+    <!-- 排行榜页面 -->
+    <div id="view-rank" class="view">
+        <div id="rank-list"></div>
+    </div>
+
+    <!-- 底部导航栏 -->
+    <nav class="bottom-nav">
+        <div class="nav-item active" onclick="App.showView('view-players')">
+            <span class="nav-icon">👤</span>
+            <span>球员</span>
+        </div>
+        <div class="nav-item" onclick="App.showView('view-matches')">
+            <span class="nav-icon">⚔️</span>
+            <span>对战</span>
+        </div>
+        <div class="nav-item" onclick="App.showView('view-rank')">
+            <span class="nav-icon">🏆</span>
+            <span>排行</span>
+        </div>
+    </nav>
+
+    <!-- 比分记录弹窗 -->
+    <div class="modal" id="score-modal">
+        <div class="modal-content">
+            <div class="modal-title">登记比赛比分</div>
+            <div class="score-input-group">
+                <div class="score-player">
+                    <div id="m-p1-name" class="score-player-name"></div>
+                    <input type="number" id="m-s1" class="input-field score-input" min="0" max="999" placeholder="0" inputmode="numeric">
+                </div>
+                <div class="score-vs">VS</div>
+                <div class="score-player">
+                    <div id="m-p2-name" class="score-player-name"></div>
+                    <input type="number" id="m-s2" class="input-field score-input" min="0" max="999" placeholder="0" inputmode="numeric">
+                </div>
+            </div>
+            <button class="btn-full" onclick="App.submitScore()">提交结果</button>
+            <button class="btn-full secondary" onclick="App.closeModal()" style="background: var(--danger); color: white; border: none;">取消</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    // ============================================
+    // 应用程序主对象 - 完整功能实现
+    // ============================================
+    const App = {
+        // --- 状态数据 ---
+        players: [],
+        matches: [],
+        selectedIds: [],
+        currentMatchId: null,
+        tempAvatar: "",
+        rankedCache: null,
+
+        // --- 初始化 ---
+        init() {
+            this.loadData();
+            this.attachEventListeners();
+            this.showView('view-players');
+        },
+
+        loadData() {
+            try {
+                this.players = JSON.parse(localStorage.getItem('sports_players')) || [];
+                this.matches = JSON.parse(localStorage.getItem('sports_matches')) || [];
+            } catch (e) {
+                console.error('数据加载失败:', e);
+                this.players = [];
+                this.matches = [];
+            }
+        },
+
+        saveData() {
+            try {
+                localStorage.setItem('sports_players', JSON.stringify(this.players));
+                localStorage.setItem('sports_matches', JSON.stringify(this.matches));
+            } catch (e) {
+                console.error('数据保存失败:', e);
+                this.showToast('数据保存失败');
+            }
+        },
+
+        attachEventListeners() {
+            document.getElementById('avatar-input').addEventListener('change', (e) => {
+                const file = e.target.files[0];
+                if (!file) return;
+                
+                // 验证文件大小（限制2MB）
+                if (file.size > 2 * 1024 * 1024) {
+                    this.showToast('图片大小不能超过2MB');
+                    return;
+                }
+                
+                // 验证文件类型
+                if (!file.type.startsWith('image/')) {
+                    this.showToast('请上传图片文件');
+                    return;
+                }
+                
+                const reader = new FileReader();
+                reader.onload = (event) => {
+                    this.tempAvatar = event.target.result;
+                    document.getElementById('avatar-preview').src = this.tempAvatar;
+                };
+                reader.onerror = () => {
+                    this.showToast('文件读取失败');
+                };
+                reader.readAsDataURL(file);
+            });
+        },
+
+        // ============================================
+        // 视图管理
+        // ============================================
+        showView(viewId) {
+            document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+            document.getElementById(viewId).classList.add('active');
+            
+            // 更新导航高亮
+            const navItems = document.querySelectorAll('.nav-item');
+            const viewMap = ['view-players', 'view-matches', 'view-rank'];
+            navItems.forEach((item, idx) => {
+                item.classList.toggle('active', viewId === viewMap[idx]);
+            });
+
+            // 动态更新顶部按钮
+            const headerBtn = document.getElementById('header-actions');
+            if (viewId === 'view-players') {
+                headerBtn.innerHTML = `<button class="header-btn highlight" onclick="App.startTournament()">开始比赛</button>`;
+                this.renderPlayers();
+            } else if (viewId === 'view-matches') {
+                headerBtn.innerHTML = `<button class="header-btn" onclick="App.clearMatches()" style="color: var(--danger)">重置赛事</button>`;
+                this.renderMatches();
+            } else {
+                headerBtn.innerHTML = "";
+                this.renderRank();
+            }
+        },
+
+        showEditView() {
+            this.tempAvatar = "";
+            document.getElementById('avatar-preview').src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 120 120'%3E%3Crect fill='%23e0e0e0' width='120' height='120'/%3E%3Ctext x='50%25' y='50%25' font-size='40' fill='%23999' text-anchor='middle' dy='.3em'%3E+%3C/text%3E%3C/svg%3E";
+            document.getElementById('p-name').value = "";
+            document.getElementById('p-title').value = "";
+            document.getElementById('avatar-input').value = "";
+            this.showView('view-edit');
+        },
+
+        // ============================================
+        // 球员管理模块
+        // ============================================
+        savePlayer() {
+            const name = document.getElementById('p-name').value.trim();
+            const title = document.getElementById('p-title').value.trim();
+            
+            // 验证输入
+            if (!name) {
+                this.showToast("昵称不能为空");
+                return;
+            }
+            
+            if (name.length > 20) {
+                this.showToast("昵称不能超过20个字");
+                return;
+            }
+            
+            if (this.players.some(p => p.name === name)) {
+                this.showToast("该昵称已存在");
+                return;
+            }
+
+            const newPlayer = {
+                id: Date.now() + Math.random(),
+                name: name,
+                title: title || "参赛球员",
+                avatar: this.tempAvatar || this.getDefaultAvatar(name),
+                wins: 0,
+                played: 0
+            };
+
+            this.players.push(newPlayer);
+            this.saveData();
+            this.selectedIds = [];
+            this.rankedCache = null;
+            this.showToast("✓ 球员添加成功");
+            this.showView('view-players');
+        },
+
+        // 生成默认头像
+        getDefaultAvatar(name) {
+            const colors = ['FF6B6B', '4ECDC4', '45B7D1', 'FFA07A', '98D8C8', 'F7DC6F', 'BB8FCE'];
+            const hash = name.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
+            const color = colors[hash % colors.length];
+            const initial = name[0].toUpperCase();
+            return `data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 120 120'%3E%3Crect fill='%23${color}' width='120' height='120'/%3E%3Ctext x='50%25' y='50%25' font-size='60' font-weight='bold' fill='white' text-anchor='middle' dy='.35em' font-family='Arial'%3E${initial}%3C/text%3E%3C/svg%3E`;
+        },
+
+        renderPlayers() {
+            const grid = document.getElementById('player-grid');
+            if (this.players.length === 0) {
+                grid.innerHTML = `<div style="grid-column: 1/3; text-align: center; padding: 40px 20px; color: var(--text-sub);">还没有球员，点击下方按钮添加</div>`;
+                return;
+            }
+
+            grid.innerHTML = this.players.map(p => `
+                <div class="player-card ${this.selectedIds.includes(p.id) ? 'selected' : ''}" onclick="App.toggleSelect(${p.id})">
+                    <img src="${p.avatar}" class="player-img" alt="${this.escapeHtml(p.name)}">
+                    <div class="player-info">
+                        <div class="player-name">${this.escapeHtml(p.name)}</div>
+                        <div class="player-title">${this.escapeHtml(p.title)}</div>
+                    </div>
+                    <div class="select-mask"></div>
+                </div>
+            `).join('');
+        },
+
+        toggleSelect(id) {
+            const idx = this.selectedIds.indexOf(id);
+            if (idx > -1) {
+                this.selectedIds.splice(idx, 1);
+            } else {
+                this.selectedIds.push(id);
+            }
+            this.renderPlayers();
+        },
+
+        // ============================================
+        // 赛事管理模块
+        // ============================================
+        startTournament() {
+            if (this.selectedIds.length < 2) {
+                this.showToast("请至少选择2位球员");
+                return;
+            }
+
+            this.matches = [];
+            let matchCount = 0;
+            
+            // 生成全循环赛程
+            for (let i = 0; i < this.selectedIds.length; i++) {
+                for (let j = i + 1; j < this.selectedIds.length; j++) {
+                    const p1Id = this.selectedIds[i];
+                    const p2Id = this.selectedIds[j];
+                    
+                    this.matches.push({
+                        id: Date.now() + i * 1000 + j,
+                        p1Id: p1Id,
+                        p2Id: p2Id,
+                        s1: null,
+                        s2: null,
+                        done: false
+                    });
+                    matchCount++;
+                }
+            }
+
+            this.saveData();
+            this.rankedCache = null;
+            this.showToast(`✓ 生成${matchCount}场比赛`);
+            this.showView('view-matches');
+        },
+
+        getPlayerById(id) {
+            return this.players.find(p => p.id === id);
+        },
+
+        renderMatches() {
+            const list = document.getElementById('match-list');
+            if (this.matches.length === 0) {
+                list.innerHTML = `<div class="empty-state">去"球员"页面挑选人选并开始比赛吧</div>`;
+                return;
+            }
+
+            list.innerHTML = this.matches.map(m => {
+                const p1 = this.getPlayerById(m.p1Id);
+                const p2 = this.getPlayerById(m.p2Id);
+                if (!p1 || !p2) return '';
+
+                return `
+                    <div class="match-card ${m.done ? 'completed' : ''}" ${!m.done ? `onclick="App.openScore(${m.id})"` : ''}>
+                        <div class="match-row">
+                            <div class="match-player">
+                                <img src="${p1.avatar}" class="match-avatar" alt="${this.escapeHtml(p1.name)}">
+                                <div class="match-name">${this.escapeHtml(p1.name)}</div>
+                            </div>
+                            <div class="match-vs">${m.done ? '已完赛' : '未开始'}</div>
+                            <div class="match-player">
+                                <img src="${p2.avatar}" class="match-avatar" alt="${this.escapeHtml(p2.name)}">
+                                <div class="match-name">${this.escapeHtml(p2.name)}</div>
+                            </div>
+                        </div>
+                        ${m.done ? `<div class="match-score">${m.s1} : ${m.s2}</div>` : `<button class="btn-full" style="padding: 8px; font-size: 14px; margin: 10px 0 0 0;">录入比分</button>`}
+                    </div>
+                `;
+            }).join('');
+        },
+
+        openScore(id) {
+            const match = this.matches.find(m => m.id === id);
+            if (!match) return;
+
+            const p1 = this.getPlayerById(match.p1Id);
+            const p2 = this.getPlayerById(match.p2Id);
+            if (!p1 || !p2) return;
+
+            this.currentMatchId = id;
+            document.getElementById('m-p1-name').textContent = p1.name;
+            document.getElementById('m-p2-name').textContent = p2.name;
+            document.getElementById('m-s1').value = "";
+            document.getElementById('m-s2').value = "";
+            document.getElementById('m-s1').focus();
+            document.getElementById('score-modal').classList.add('active');
+        },
+
+        submitScore() {
+            const s1Str = document.getElementById('m-s1').value.trim();
+            const s2Str = document.getElementById('m-s2').value.trim();
+            
+            // 验证输入
+            if (!s1Str || !s2Str) {
+                this.showToast("请输入完整比分");
+                return;
+            }
+
+            const s1 = parseInt(s1Str);
+            const s2 = parseInt(s2Str);
+
+            if (isNaN(s1) || isNaN(s2)) {
+                this.showToast("请输入有效的数字");
+                return;
+            }
+
+            if (s1 < 0 || s2 < 0) {
+                this.showToast("比分不能为负数");
+                return;
+            }
+
+            const match = this.matches.find(m => m.id === this.currentMatchId);
+            if (!match) return;
+
+            const p1 = this.getPlayerById(match.p1Id);
+            const p2 = this.getPlayerById(match.p2Id);
+            if (!p1 || !p2) return;
+
+            // 更新比赛数据
+            match.s1 = s1;
+            match.s2 = s2;
+            match.done = true;
+
+            // 更新球员数据
+            p1.played++;
+            p2.played++;
+
+            if (s1 > s2) {
+                p1.wins++;
+            } else if (s2 > s1) {
+                p2.wins++;
+            }
+            // 平局：都不加分
+
+            this.saveData();
+            this.rankedCache = null;
+            this.closeModal();
+            this.showToast("✓ 比分已记录");
+            this.renderMatches();
+        },
+
+        closeModal() {
+            document.getElementById('score-modal').classList.remove('active');
+            this.currentMatchId = null;
+        },
+
+        clearMatches() {
+            if (!confirm("确定要重置当前赛事吗？积分将保留。")) return;
+            
+            this.matches = [];
+            this.selectedIds = [];
+            this.saveData();
+            this.rankedCache = null;
+            this.showToast("✓ 赛事已重置");
+            this.renderMatches();
+        },
+
+        // ============================================
+        // 排行管理模块
+        // ============================================
+        renderRank() {
+            const list = document.getElementById('rank-list');
+            
+            if (this.players.length === 0) {
+                list.innerHTML = `<div class="empty-state">还没有球员数据</div>`;
+                return;
+            }
+
+            const sorted = this.getRankedPlayers();
+
+            list.innerHTML = sorted.map((p, i) => {
+                const winRate = p.played > 0 ? Math.round((p.wins / p.played) * 100) : 0;
+                return `
+                    <div class="rank-item">
+                        <div class="rank-num">${i + 1}</div>
+                        <img src="${p.avatar}" class="rank-avatar" alt="${this.escapeHtml(p.name)}">
+                        <div class="rank-info">
+                            <div class="rank-info-name">${this.escapeHtml(p.name)}</div>
+                            <div class="rank-info-stats">出战 ${p.played} 场 · 胜率 ${winRate}%</div>
+                        </div>
+                        <div class="rank-points">${p.wins} 胜</div>
+                    </div>
+                `;
+            }).join('');
+        },
+
+        getRankedPlayers() {
+            if (!this.rankedCache) {
+                this.rankedCache = [...this.players].sort((a, b) => {
+                    if (b.wins !== a.wins) {
+                        return b.wins - a.wins;
+                    }
+                    // 胜场相同时，按胜率排序
+                    const aRate = a.played > 0 ? a.wins / a.played : 0;
+                    const bRate = b.played > 0 ? b.wins / b.played : 0;
+                    return bRate - aRate;
+                });
+            }
+            return this.rankedCache;
+        },
+
+        // ============================================
+        // 工具函数
+        // ============================================
+        showToast(message) {
+            const toast = document.createElement('div');
+            toast.className = 'toast';
+            toast.textContent = message;
+            document.body.appendChild(toast);
+            
+            setTimeout(() => {
+                toast.style.opacity = '0';
+                toast.style.transform = 'translateX(-50%) translateY(50px)';
+                setTimeout(() => toast.remove(), 300);
+            }, 1800);
+        },
+
+        escapeHtml(text) {
+            if (typeof text !== 'string') return '';
+            const map = {
+                '&': '&amp;',
+                '<': '&lt;',
+                '>': '&gt;',
+                '"': '&quot;',
+                "'": '&#039;'
+            };
+            return text.replace(/[&<>"']/g, m => map[m]);
+        }
+    };
+
+    // 应用程序启动
+    document.addEventListener('DOMContentLoaded', () => App.init());
+</script>
+
+</body>
+</html>
