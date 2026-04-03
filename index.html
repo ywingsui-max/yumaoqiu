@@ -2,7 +2,7 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>羽球顶级对战系统</title>
     <style>
         :root {
@@ -14,371 +14,210 @@
             --text-sub: #8E8E93;
             --border: rgba(255, 255, 255, 0.5);
             --danger: #FF3B30;
-            --glass-blur: 20px;
-            --glass-bg: rgba(255, 255, 255, 0.8);
-            --glass-border: rgba(255, 255, 255, 0.6);
+            --glass-blur: 25px;
+            --glass-bg: rgba(255, 255, 255, 0.75);
+            --glass-border: rgba(255, 255, 255, 0.4);
             --shadow-sm: 0 2px 10px rgba(0, 0, 0, 0.05);
-            --shadow-md: 0 8px 24px rgba(0, 0, 0, 0.1);
-            --shadow-lg: 0 12px 40px rgba(0, 0, 0, 0.15);
+            --shadow-lg: 0 12px 40px rgba(0, 0, 0, 0.12);
         }
         
         * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
-        html, body { width: 100%; height: 100%; }
+        
+        /* 隐藏滚动条 */
+        ::-webkit-scrollbar { display: none; }
+        html, body { 
+            width: 100%; height: 100%; 
+            scrollbar-width: none; -ms-overflow-style: none;
+            background-color: #000; /* 背景底色 */
+        }
         
         body {
-            font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", Roboto, sans-serif;
-            background: linear-gradient(135deg, #F5F5F7 0%, #FFFFFF 100%);
-            display: flex; justify-content: center; align-items: flex-start; min-height: 100vh; padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", sans-serif;
+            background: linear-gradient(135deg, #F5F5F7 0%, #E2E2E7 100%);
+            display: flex; justify-content: center;
         }
         
         #app {
-            width: 100%; max-width: 430px; min-height: 100vh; position: relative; display: flex; flex-direction: column;
-            background: linear-gradient(180deg, rgba(245, 245, 247, 0.98) 0%, rgba(255, 255, 255, 0.95) 100%);
-            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.08);
+            width: 100%; max-width: 430px; height: 100vh; position: relative; display: flex; flex-direction: column;
+            background: #F5F5F7; overflow: hidden;
         }
 
-        .view { display: none; flex: 1; padding-bottom: 100px; overflow-y: auto; background: transparent; min-height: 0; }
-        .view.active { display: flex; flex-direction: column; animation: fadeInUp 0.3s ease-out forwards; }
-        @keyframes fadeInUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        .view { display: none; flex: 1; padding-bottom: 120px; overflow-y: auto; scrollbar-width: none; }
+        .view.active { display: flex; flex-direction: column; animation: viewFade 0.4s cubic-bezier(0.4, 0, 0.2, 1); }
+        @keyframes viewFade { from { opacity: 0; transform: scale(0.98); } to { opacity: 1; transform: scale(1); } }
 
         .header {
-            height: 60px; background: var(--glass-bg); backdrop-filter: blur(var(--glass-blur)); border-bottom: 1px solid var(--glass-border);
+            height: 60px; background: rgba(245, 245, 247, 0.8); backdrop-filter: blur(20px);
             display: flex; justify-content: space-between; align-items: center; padding: 0 20px; position: sticky; top: 0; z-index: 100;
-            box-shadow: var(--shadow-sm); flex-shrink: 0;
         }
-        
-        .brand { font-size: 18px; font-weight: 700; color: var(--text-main); letter-spacing: -0.5px; }
-        
+        .brand { font-size: 19px; font-weight: 700; color: var(--text-main); letter-spacing: -0.5px; }
         .header-btn {
-            font-size: 15px; font-weight: 600; color: var(--primary); cursor: pointer; border: none; background: transparent;
-            padding: 8px 12px; border-radius: 10px; transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            font-size: 15px; font-weight: 600; color: var(--primary); border: none; background: transparent; padding: 8px 12px;
         }
-        
-        .header-btn:active { transform: scale(0.95); opacity: 0.7; }
-        .header-btn.highlight { background: var(--success); color: #FFFFFF; padding: 8px 16px; border-radius: 12px; box-shadow: 0 4px 12px rgba(52, 199, 89, 0.3); }
-        .header-btn.highlight:active { transform: scale(0.93); box-shadow: 0 2px 8px rgba(52, 199, 89, 0.2); }
 
-        .grid-container { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; padding: 16px; flex: 1; width: 100%; align-content: flex-start; }
-
+        /* 球员卡片调整 */
+        .grid-container { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; padding: 16px; }
         .player-card {
-            background: var(--card-bg); backdrop-filter: blur(10px); border: 2px solid transparent; border-radius: 20px;
-            overflow: hidden; position: relative; display: flex; flex-direction: column; cursor: pointer; height: 220px;
-            transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1); box-shadow: none; will-change: transform;
-            user-select: none; touch-action: manipulation;
+            background: #FFFFFF; border-radius: 22px; overflow: hidden; position: relative; 
+            display: flex; flex-direction: column; height: 210px; transition: transform 0.2s ease;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.03); /* 极淡的固定阴影 */
         }
+        .player-card:active { transform: scale(0.96); }
+        .player-card.selected { border: 2.5px solid var(--success); }
 
-        .player-card:hover { transform: translateY(-4px); box-shadow: var(--shadow-md); background: rgba(255, 255, 255, 0.9); }
-        .player-card:active { transform: scale(0.97); }
-        .player-card.selected { border-color: var(--success); box-shadow: var(--shadow-md); background: rgba(255, 255, 255, 0.95); }
-        .player-card.selected:hover { transform: translateY(-4px); box-shadow: 0 12px 30px rgba(52, 199, 89, 0.15); }
+        .player-img-wrapper { flex: 1; background: #E5E5EA; position: relative; }
+        .player-img { width: 100%; height: 100%; object-fit: cover; }
+        .player-info { padding: 12px; text-align: center; background: #FFF; }
+        .player-name { font-size: 16px; font-weight: 700; margin-bottom: 2px; }
+        .player-title { font-size: 12px; color: var(--text-sub); }
 
-        .player-img-wrapper {
-            flex: 1; width: 100%; position: relative; overflow: hidden; background: linear-gradient(135deg, #E0E0E0 0%, #F0F0F0 100%);
+        /* iOS 悬浮 Dock 栏 */
+        .bottom-nav-container {
+            position: fixed; bottom: 30px; left: 0; width: 100%; display: flex; justify-content: center; 
+            z-index: 1000; pointer-events: none; padding: 0 20px;
         }
-
-        .player-img {
-            width: 100%; height: 100%; object-fit: cover; display: block;
-        }
-        
-        .player-img.hidden { display: none; }
-
-        .player-img-placeholder {
-            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            display: flex; align-items: center; justify-content: center; font-size: 48px; font-weight: 700; color: rgba(0, 0, 0, 0.2);
-        }
-        
-        .player-img-placeholder.hidden { display: none; }
-
-        .player-info {
-            padding: 14px; text-align: center; background: rgba(255, 255, 255, 0.5); backdrop-filter: blur(10px);
-            min-height: 70px; display: flex; flex-direction: column; justify-content: center; align-items: center;
-            gap: 4px; flex-shrink: 0;
-        }
-
-        .player-name { font-size: 16px; font-weight: 700; color: var(--text-main); word-break: break-word; letter-spacing: -0.3px; width: 100%; }
-        .player-title { font-size: 12px; font-weight: 500; color: var(--text-sub); word-break: break-word; width: 100%; }
-
-        .select-indicator {
-            position: absolute; top: 10px; right: 10px; width: 28px; height: 28px; background: var(--success);
-            border: 3px solid white; border-radius: 50%; display: none; align-items: center; justify-content: center;
-            font-size: 16px; font-weight: bold; color: white; box-shadow: 0 4px 12px rgba(52, 199, 89, 0.4); z-index: 10;
-        }
-        
-        .player-card.selected .select-indicator { display: flex; animation: popIn 0.3s cubic-bezier(0.34, 1.56, 0.64, 1); }
-        @keyframes popIn { 0% { transform: scale(0); } 50% { transform: scale(1.1); } 100% { transform: scale(1); } }
-
-        .match-card {
-            background: var(--card-bg); backdrop-filter: blur(10px); border: 1px solid var(--glass-border); border-radius: 20px;
-            padding: 16px; margin: 12px 16px; box-shadow: var(--shadow-sm); transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
-            will-change: transform;
-        }
-        
-        .match-card:not(.completed) { cursor: pointer; }
-        .match-card:not(.completed):hover { transform: translateY(-2px); box-shadow: var(--shadow-md); background: rgba(255, 255, 255, 0.95); }
-        .match-card.completed { opacity: 0.6; background: rgba(255, 255, 255, 0.5); }
-
-        .match-row { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
-        .match-player { display: flex; flex-direction: column; align-items: center; flex: 1; gap: 8px; }
-
-        .match-avatar {
-            width: 56px; height: 56px; border-radius: 50%; object-fit: cover; border: 2px solid rgba(255, 255, 255, 0.8);
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1); background: linear-gradient(135deg, #E0E0E0 0%, #F0F0F0 100%); display: block;
-        }
-        
-        .match-avatar.hidden { display: none; }
-
-        .match-avatar-placeholder {
-            width: 56px; height: 56px; border-radius: 50%; border: 2px solid rgba(255, 255, 255, 0.8);
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1); background: linear-gradient(135deg, #E0E0E0 0%, #F0F0F0 100%);
-            display: none; align-items: center; justify-content: center; font-size: 24px; font-weight: 700; color: rgba(0, 0, 0, 0.2);
-        }
-        
-        .match-avatar-placeholder.show { display: flex; }
-
-        .match-name { font-size: 14px; font-weight: 600; text-align: center; word-break: break-word; color: var(--text-main); }
-        .match-vs { font-size: 13px; color: var(--text-sub); font-weight: 700; text-align: center; padding: 0 8px; letter-spacing: 1px; }
-        .match-score { font-size: 32px; font-weight: 800; color: var(--primary); margin-top: 12px; text-align: center; letter-spacing: -1px; }
-
-        .rank-item {
-            display: flex; align-items: center; padding: 14px 16px; background: var(--card-bg); backdrop-filter: blur(10px);
-            border: 1px solid var(--glass-border); margin: 8px 16px; border-radius: 16px; gap: 12px;
-            transition: all 0.2s ease; box-shadow: var(--shadow-sm); will-change: transform;
-        }
-        
-        .rank-item:hover { transform: translateX(4px); box-shadow: var(--shadow-md); }
-
-        .rank-num { width: 40px; font-size: 18px; font-weight: 800; color: var(--primary); text-align: center; flex-shrink: 0; }
-
-        .rank-avatar {
-            width: 48px; height: 48px; border-radius: 50%; object-fit: cover; border: 2px solid rgba(255, 255, 255, 0.8);
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08); background: linear-gradient(135deg, #E0E0E0 0%, #F0F0F0 100%); flex-shrink: 0; display: block;
-        }
-        
-        .rank-avatar.hidden { display: none; }
-
-        .rank-avatar-placeholder {
-            width: 48px; height: 48px; border-radius: 50%; border: 2px solid rgba(255, 255, 255, 0.8);
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08); background: linear-gradient(135deg, #E0E0E0 0%, #F0F0F0 100%);
-            display: none; align-items: center; justify-content: center; font-size: 20px; font-weight: 700; color: rgba(0, 0, 0, 0.2);
-            flex-shrink: 0;
-        }
-        
-        .rank-avatar-placeholder.show { display: flex; }
-
-        .rank-info { flex: 1; display: flex; flex-direction: column; gap: 2px; min-width: 0; }
-        .rank-info-name { font-size: 15px; font-weight: 700; color: var(--text-main); word-break: break-word; }
-        .rank-info-stats { font-size: 12px; color: var(--text-sub); font-weight: 500; }
-        .rank-points { font-size: 18px; font-weight: 800; color: var(--success); text-align: right; min-width: 50px; flex-shrink: 0; }
-
         .bottom-nav {
-            position: fixed; bottom: 0; left: 50%; transform: translateX(-50%); width: 100%; max-width: 430px; height: 88px;
-            background: var(--glass-bg); backdrop-filter: blur(var(--glass-blur)); border-top: 1px solid var(--glass-border);
-            display: flex; padding-bottom: 24px; padding-top: 12px; z-index: 50; box-shadow: 0 -4px 16px rgba(0, 0, 0, 0.05);
-            flex-shrink: 0;
+            pointer-events: auto;
+            width: 100%; max-width: 360px; height: 68px;
+            background: var(--glass-bg); backdrop-filter: blur(var(--glass-blur));
+            border: 1px solid var(--glass-border); border-radius: 34px;
+            display: flex; align-items: center; padding: 0 10px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
         }
-
         .nav-item {
-            flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; color: var(--text-sub);
-            font-size: 10px; cursor: pointer; transition: all 0.2s ease; gap: 4px; user-select: none;
+            flex: 1; display: flex; flex-direction: column; align-items: center; gap: 4px;
+            color: var(--text-sub); transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         }
-        
-        .nav-item.active { color: var(--primary); }
-        .nav-icon { width: 24px; height: 24px; line-height: 1; transition: transform 0.2s ease; display: flex; align-items: center; justify-content: center; }
-        .nav-item.active .nav-icon { transform: scale(1.1); }
+        .nav-item.active { color: var(--primary); transform: translateY(-2px); }
+        .nav-icon { width: 26px; height: 26px; }
 
-        .nav-icon svg { width: 100%; height: 100%; }
-
+        /* 弹窗通用样式 */
         .modal {
-            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.3);
-            backdrop-filter: blur(8px); z-index: 200; align-items: center; justify-content: center; animation: fadeIn 0.3s ease;
+            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
+            background: rgba(0, 0, 0, 0.2); backdrop-filter: blur(10px); z-index: 2000;
+            align-items: center; justify-content: center;
         }
-        
         .modal.active { display: flex; }
-        @keyframes fadeIn { from { opacity: 0; backdrop-filter: blur(0); } to { opacity: 1; backdrop-filter: blur(8px); } }
-
         .modal-content {
-            background: var(--glass-bg); backdrop-filter: blur(20px); border: 1px solid var(--glass-border);
-            width: 85%; max-width: 380px; border-radius: 28px; padding: 28px; box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
-            animation: slideUp 0.4s cubic-bezier(0.34, 1.56, 0.64, 1); max-height: 90vh; overflow-y: auto;
+            background: rgba(255, 255, 255, 0.95); width: 88%; max-width: 360px;
+            border-radius: 30px; padding: 24px; box-shadow: var(--shadow-lg);
+            max-height: 85vh; overflow-y: auto; scrollbar-width: none; /* 移除滚动条 */
         }
-        
-        @keyframes slideUp { from { transform: translateY(40px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+        .modal-content::-webkit-scrollbar { display: none; }
 
-        .modal-title { text-align: center; margin-bottom: 24px; font-size: 18px; font-weight: 700; color: var(--text-main); letter-spacing: -0.3px; }
-
-        .score-input-group { display: flex; justify-content: space-around; align-items: center; margin-bottom: 24px; gap: 12px; }
-        .score-player { text-align: center; flex: 1; }
-        .score-player-name { font-weight: 600; margin-bottom: 12px; color: var(--text-main); word-break: break-word; font-size: 14px; }
-
-        .score-input, .form-input {
-            width: 100%; padding: 12px; text-align: center; font-size: 16px; font-weight: 600;
-            border: 2px solid var(--glass-border); background: rgba(255, 255, 255, 0.5); border-radius: 12px; outline: none; transition: all 0.2s ease;
-            margin-bottom: 12px;
-        }
-        
-        .score-input:focus, .form-input:focus { border-color: var(--primary); background: rgba(255, 255, 255, 0.9); box-shadow: 0 0 0 4px rgba(0, 122, 255, 0.1); }
-
-        .score-vs { font-weight: 800; font-size: 16px; color: var(--text-sub); padding: 0 8px; }
-
-        .form-group { margin-bottom: 20px; }
-        .form-label { display: block; font-size: 14px; font-weight: 600; color: var(--text-main); margin-bottom: 8px; }
-        .form-hint { font-size: 12px; color: var(--text-sub); margin-top: 4px; }
-
-        .file-upload-btn {
-            width: 100%; padding: 12px; background: var(--primary); color: white; border: none; border-radius: 12px;
-            font-size: 14px; font-weight: 600; cursor: pointer; transition: all 0.2s ease; margin-bottom: 12px;
-        }
-        .file-upload-btn:active { transform: scale(0.95); }
-
+        /* 编辑弹窗特定顺序样式 */
+        .edit-section-title { font-size: 14px; font-weight: 600; color: var(--text-main); margin-bottom: 12px; }
         .upload-preview {
-            width: 100%; height: 150px; border: 2px dashed var(--primary); border-radius: 12px;
-            display: flex; align-items: center; justify-content: center; background: rgba(0, 122, 255, 0.05);
-            margin-bottom: 12px; overflow: hidden;
+            width: 120px; height: 120px; border-radius: 20px; background: #EEE; 
+            margin: 0 auto 16px; overflow: hidden; border: 1px solid #DDD;
         }
         .upload-preview img { width: 100%; height: 100%; object-fit: cover; }
 
-        .btn-full {
-            width: 100%; background: var(--primary); color: white; border: none; border-radius: 14px; padding: 14px 20px;
-            font-size: 16px; font-weight: 700; cursor: pointer; transition: all 0.2: cubic-bezier(0.4, 0, 0.2, 1);
-            margin-top: 12px; box-shadow: 0 4px 12px rgba(0, 122, 255, 0.3); letter-spacing: -0.3px;
+        /* 虚线框上传区域 */
+        .video-upload-placeholder {
+            border: 2px dashed #C7C7CC; border-radius: 16px; padding: 25px;
+            text-align: center; color: var(--text-sub); cursor: pointer; transition: all 0.2s;
+            background: rgba(0,0,0,0.02);
         }
-        
-        .btn-full:active { transform: scale(0.95); box-shadow: 0 2px 8px rgba(0, 122, 255, 0.2); }
-        .btn-full.secondary { background: rgba(0, 0, 0, 0.05); color: var(--danger); border: 1px solid var(--glass-border); box-shadow: none; margin-top: 8px; }
-        .btn-full.secondary:active { background: rgba(0, 0, 0, 0.08); }
+        .video-upload-placeholder:active { background: rgba(0,0,0,0.05); border-color: var(--text-sub); }
 
-        .empty-state { display: flex; align-items: center; justify-content: center; padding: 60px 20px; color: var(--text-sub); font-size: 15px; text-align: center; min-height: 300px; flex: 1; }
+        .btn-full {
+            width: 100%; background: var(--primary); color: white; border: none; border-radius: 16px; 
+            padding: 15px; font-size: 16px; font-weight: 700; margin-top: 15px;
+        }
+        .btn-link { color: var(--text-sub); font-size: 14px; margin-top: 15px; width: 100%; background: none; border: none; }
 
         .toast {
-            position: fixed; bottom: 120px; left: 50%; transform: translateX(-50%); background: rgba(0, 0, 0, 0.85);
-            backdrop-filter: blur(10px); color: white; padding: 12px 24px; border-radius: 12px; font-size: 14px;
-            font-weight: 600; z-index: 300; animation: slideUp 0.3s ease; max-width: 300px; text-align: center;
+            position: fixed; top: 40px; left: 50%; transform: translateX(-50%);
+            background: rgba(0,0,0,0.8); color: white; padding: 10px 20px; border-radius: 20px;
+            font-size: 14px; z-index: 3000; animation: toastIn 0.3s ease forwards;
         }
-
-        @media (max-width: 375px) {
-            .grid-container { gap: 10px; padding: 12px; }
-            .player-card { height: 180px; }
-            .match-card { padding: 12px; margin: 10px 12px; }
-            .rank-item { padding: 12px; margin: 6px 12px; }
-        }
+        @keyframes toastIn { from { opacity: 0; transform: translate(-50%, -20px); } to { opacity: 1; transform: translate(-50%, 0); } }
     </style>
 </head>
 <body>
 
 <div id="app">
     <header class="header">
-        <div class="brand">羽球顶级对战系统</div>
+        <div class="brand">羽球对战</div>
         <div id="header-actions"></div>
     </header>
 
     <div id="view-players" class="view active">
         <div class="grid-container" id="player-grid"></div>
     </div>
+    <div id="view-matches" class="view"><div id="match-list"></div></div>
+    <div id="view-rank" class="view"><div id="rank-list"></div></div>
 
-    <div id="view-matches" class="view">
-        <div id="match-list"></div>
+    <div class="bottom-nav-container">
+        <nav class="bottom-nav">
+            <div class="nav-item active" onclick="App.showView('view-players')">
+                <div class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></div>
+                <span style="font-size: 10px; font-weight: 600;">球员</span>
+            </div>
+            <div class="nav-item" onclick="App.showView('view-matches')">
+                <div class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg></div>
+                <span style="font-size: 10px; font-weight: 600;">对战</span>
+            </div>
+            <div class="nav-item" onclick="App.showView('view-rank')">
+                <div class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 20V10M18 20V4M6 20v-4"/></svg></div>
+                <span style="font-size: 10px; font-weight: 600;">排行</span>
+            </div>
+        </nav>
     </div>
-
-    <div id="view-rank" class="view">
-        <div id="rank-list"></div>
-    </div>
-
-    <nav class="bottom-nav">
-        <div class="nav-item active" onclick="App.showView('view-players')">
-            <span class="nav-icon">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
-                    <circle cx="12" cy="7" r="4"></circle>
-                </svg>
-            </span>
-            <span>球员</span>
-        </div>
-        <div class="nav-item" onclick="App.showView('view-matches')">
-            <span class="nav-icon">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M6 9h12M12 3v18"></path>
-                    <path d="M3 3l18 18"></path>
-                    <path d="M21 3L3 21"></path>
-                </svg>
-            </span>
-            <span>对战</span>
-        </div>
-        <div class="nav-item" onclick="App.showView('view-rank')">
-            <span class="nav-icon">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M6 9H5a2 2 0 0 0-2 2v5a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-5a2 2 0 0 0-2-2h-1"></path>
-                    <path d="M6 5h12v4H6z"></path>
-                    <line x1="9" y1="5" x2="9" y2="3"></line>
-                    <line x1="15" y1="5" x2="15" y2="3"></line>
-                </svg>
-            </span>
-            <span>排行</span>
-        </div>
-    </nav>
 
     <div class="modal" id="login-modal">
         <div class="modal-content">
-            <div class="modal-title">登录编辑</div>
-            <div class="form-group">
-                <label class="form-label">请输入登录号</label>
-                <input type="text" id="login-code" class="form-input" placeholder="输入您的登录号" inputmode="numeric">
-            </div>
-            <button class="btn-full" onclick="App.submitLogin()">确定</button>
-            <button class="btn-full secondary" onclick="App.closeLoginModal()">取消</button>
+            <h2 style="text-align: center; margin-bottom: 20px;">身份验证</h2>
+            <p style="color: var(--text-sub); font-size: 14px; text-align: center; margin-bottom: 20px;">请输入您的登录号以开启操作权限</p>
+            <input type="text" id="login-code" style="width: 100%; padding: 15px; border-radius: 12px; border: 1px solid #DDD; text-align: center; font-size: 18px; font-weight: bold;" placeholder="0000" inputmode="numeric">
+            <button class="btn-full" onclick="App.submitLogin()">确认登录</button>
+            <button class="btn-link" onclick="App.closeModal('login-modal')">随便看看</button>
         </div>
     </div>
 
     <div class="modal" id="edit-player-modal">
         <div class="modal-content">
-            <div class="modal-title" id="edit-title">编辑球员信息</div>
+            <h2 id="edit-title" style="text-align:center; margin-bottom:24px; font-size:18px;">编辑资料</h2>
             
-            <div class="form-group">
-                <label class="form-label">球员形象（建议尺寸360×300px）</label>
-                <button class="file-upload-btn" onclick="document.getElementById('avatar-upload').click()">上传球员形象 JPG/PNG</button>
-                <input type="file" id="avatar-upload" accept="image/jpeg,image/png" style="display:none;" onchange="App.handleAvatarUpload()">
-                <div class="upload-preview" id="avatar-preview">
-                    <div style="color: var(--text-sub); font-size: 12px;">预览图片</div>
-                </div>
-            </div>
+            <div class="edit-section-title">球员形象预览</div>
+            <div class="upload-preview" id="avatar-preview"></div>
+            
+            <button class="btn-full" style="background:#EEE; color:#333; margin-top:0; margin-bottom:24px;" onclick="document.getElementById('avatar-upload').click()">更换照片</button>
+            <input type="file" id="avatar-upload" accept="image/*" style="display:none" onchange="App.handleAvatarUpload()">
 
-            <div class="form-group">
-                <label class="form-label">名字</label>
-                <input type="text" id="edit-name" class="form-input" placeholder="输入球员名字">
-            </div>
+            <div class="edit-section-title">基本信息</div>
+            <input type="text" id="edit-name" style="width:100%; padding:12px; border-radius:10px; border:1px solid #DDD; margin-bottom:12px;" placeholder="名字">
+            <input type="text" id="edit-title-input" style="width:100%; padding:12px; border-radius:10px; border:1px solid #DDD; margin-bottom:24px;" placeholder="称号">
 
-            <div class="form-group">
-                <label class="form-label">称号</label>
-                <input type="text" id="edit-title-input" class="form-input" placeholder="输入球员称号">
+            <div class="edit-section-title">AI技术分析视频</div>
+            <div class="video-upload-placeholder" onclick="document.getElementById('video-upload').click()">
+                <div style="font-size: 24px; margin-bottom: 8px;">+</div>
+                <div id="video-info" style="font-size: 13px;">点击上传技术动作视频</div>
             </div>
+            <input type="file" id="video-upload" accept="video/*" style="display:none" onchange="App.handleVideoUpload()">
 
-            <div class="form-group">
-                <label class="form-label" style="margin-bottom: 16px;">AI技术分析</label>
-                <button class="file-upload-btn" onclick="document.getElementById('video-upload').click()">上传视频</button>
-                <input type="file" id="video-upload" accept="video/*" style="display:none;" onchange="App.handleVideoUpload()">
-                <div id="video-info" style="font-size: 12px; color: var(--text-sub); margin-top: 8px;"></div>
-            </div>
-
-            <button class="btn-full" onclick="App.submitEditPlayer()">保存</button>
-            <button class="btn-full secondary" onclick="App.closeEditModal()">取消</button>
+            <button class="btn-full" onclick="App.submitEditPlayer()">保存更新</button>
+            <button class="btn-link" onclick="App.closeModal('edit-player-modal')">取消修改</button>
         </div>
     </div>
 
     <div class="modal" id="score-modal">
         <div class="modal-content">
-            <div class="modal-title">登记比赛比分</div>
-            <div class="score-input-group">
-                <div class="score-player">
-                    <div id="m-p1-name" class="score-player-name"></div>
-                    <input type="number" id="m-s1" class="score-input" min="0" max="999" placeholder="0" inputmode="numeric">
+            <h2 style="text-align:center; margin-bottom:20px;">记录比分</h2>
+            <div style="display:flex; align-items:center; gap:10px; margin-bottom:20px;">
+                <div style="flex:1; text-align:center;">
+                    <div id="m-p1-name" style="font-weight:700; font-size:14px; margin-bottom:8px;"></div>
+                    <input type="number" id="m-s1" style="width:100%; padding:12px; text-align:center; border-radius:10px; border:1px solid #DDD;" placeholder="0">
                 </div>
-                <div class="score-vs">VS</div>
-                <div class="score-player">
-                    <div id="m-p2-name" class="score-player-name"></div>
-                    <input type="number" id="m-s2" class="score-input" min="0" max="999" placeholder="0" inputmode="numeric">
+                <div style="font-weight:bold; color:#CCC;">VS</div>
+                <div style="flex:1; text-align:center;">
+                    <div id="m-p2-name" style="font-weight:700; font-size:14px; margin-bottom:8px;"></div>
+                    <input type="number" id="m-s2" style="width:100%; padding:12px; text-align:center; border-radius:10px; border:1px solid #DDD;" placeholder="0">
                 </div>
             </div>
-            <button class="btn-full" onclick="App.submitScore()">提交结果</button>
-            <button class="btn-full secondary" onclick="App.closeModal()">取消</button>
+            <button class="btn-full" onclick="App.submitScore()">提交成绩</button>
+            <button class="btn-link" onclick="App.closeModal('score-modal')">返回</button>
         </div>
     </div>
 </div>
@@ -386,453 +225,277 @@
 <script>
     const App = {
         players: [
-            { id: 1, name: "阿水", title: "摸鱼小弟", avatar: "https://github.com/ywingsui-max/yumaoqiu-assets/blob/main/as.jpg?raw=true", loginCode: "5899", wins: 0, played: 0, totalScore: 0, videoUrl: "" },
-            { id: 2, name: "高总", title: "一击必杀", avatar: "https://github.com/ywingsui-max/yumaoqiu-assets/blob/main/gz.jpg?raw=true", loginCode: "0716", wins: 0, played: 0, totalScore: 0, videoUrl: "" },
-            { id: 3, name: "C炜", title: "旋风小霸王", avatar: "https://github.com/ywingsui-max/yumaoqiu-assets/blob/main/cwei.jpg?raw=true", loginCode: "777", wins: 0, played: 0, totalScore: 0, videoUrl: "" },
-            { id: 4, name: "鸿哥", title: "大师选手", avatar: "https://github.com/ywingsui-max/yumaoqiu-assets/blob/main/ch.jpg?raw=true", loginCode: "999", wins: 0, played: 0, totalScore: 0, videoUrl: "" },
-            { id: 5, name: "春阳", title: "就是干你", avatar: "https://github.com/ywingsui-max/yumaoqiu-assets/blob/main/cy.jpg?raw=true", loginCode: "555", wins: 0, played: 0, totalScore: 0, videoUrl: "" },
-            { id: 6, name: "蕭", title: "敏思剑君", avatar: "https://github.com/ywingsui-max/yumaoqiu-assets/blob/main/jm.jpg?raw=true", loginCode: "444", wins: 0, played: 0, totalScore: 0, videoUrl: "" }
+            { id: 1, name: "阿水", title: "摸鱼小弟", avatar: "https://github.com/ywingsui-max/yumaoqiu-assets/blob/main/as.jpg?raw=true", loginCode: "5899", wins: 0, played: 0, totalScore: 0 },
+            { id: 2, name: "高总", title: "一击必杀", avatar: "https://github.com/ywingsui-max/yumaoqiu-assets/blob/main/gz.jpg?raw=true", loginCode: "0716", wins: 0, played: 0, totalScore: 0 },
+            { id: 3, name: "C炜", title: "旋风小霸王", avatar: "https://github.com/ywingsui-max/yumaoqiu-assets/blob/main/cwei.jpg?raw=true", loginCode: "777", wins: 0, played: 0, totalScore: 0 },
+            { id: 4, name: "鸿哥", title: "大师选手", avatar: "https://github.com/ywingsui-max/yumaoqiu-assets/blob/main/ch.jpg?raw=true", loginCode: "999", wins: 0, played: 0, totalScore: 0 },
+            { id: 5, name: "春阳", title: "就是干你", avatar: "https://github.com/ywingsui-max/yumaoqiu-assets/blob/main/cy.jpg?raw=true", loginCode: "555", wins: 0, played: 0, totalScore: 0 },
+            { id: 6, name: "蕭", title: "敏思剑君", avatar: "https://github.com/ywingsui-max/yumaoqiu-assets/blob/main/jm.jpg?raw=true", loginCode: "444", wins: 0, played: 0, totalScore: 0 }
         ],
-        
         matches: [],
         selectedIds: [],
-        currentMatchId: null,
-        currentEditPlayerId: null,
-        currentLoginCode: null,
-        rankedCache: null,
+        currentUser: null, // 存储当前登录的球员对象
         longPressTimer: null,
-        isLongPressTriggered: false, // 修复标记：识别是否刚触发了长按
 
-        init() { this.loadData(); this.showView('view-players'); },
+        init() {
+            this.loadSession();
+            this.loadData();
+            this.showView('view-players');
+        },
+
+        // 加载登录会话
+        loadSession() {
+            const savedUid = localStorage.getItem('logged_in_uid');
+            if (savedUid) {
+                this.currentUser = this.players.find(p => p.id == savedUid);
+            }
+        },
+
+        // 权限拦截校验
+        checkAuth() {
+            if (!this.currentUser) {
+                document.getElementById('login-modal').classList.add('active');
+                return false;
+            }
+            return true;
+        },
+
+        submitLogin() {
+            const code = document.getElementById('login-code').value.trim();
+            const player = this.players.find(p => p.loginCode === code);
+            if (player) {
+                this.currentUser = player;
+                localStorage.setItem('logged_in_uid', player.id);
+                this.closeModal('login-modal');
+                this.showToast(`欢迎回来，${player.name}`);
+                this.renderPlayers();
+            } else {
+                this.showToast("登录号无效");
+            }
+        },
 
         loadData() {
-            try {
-                const stored = localStorage.getItem('sports_data');
-                if (stored) {
-                    const data = JSON.parse(stored);
-                    this.matches = data.matches || [];
-                    if (data.players && data.players.length > 0) {
-                        data.players.forEach(savedPlayer => {
-                            const existingPlayer = this.players.find(p => p.id === savedPlayer.id);
-                            if (existingPlayer) {
-                                existingPlayer.wins = savedPlayer.wins;
-                                existingPlayer.played = savedPlayer.played;
-                                existingPlayer.totalScore = savedPlayer.totalScore;
-                                existingPlayer.name = savedPlayer.name;
-                                existingPlayer.title = savedPlayer.title;
-                                existingPlayer.avatar = savedPlayer.avatar;
-                                existingPlayer.videoUrl = savedPlayer.videoUrl || "";
-                            }
-                        });
-                    }
-                } else {
-                    this.matches = [];
-                }
-            } catch (e) { 
-                console.error('数据加载失败:', e); 
-                this.matches = []; 
+            const stored = localStorage.getItem('badminton_v2_data');
+            if (stored) {
+                const data = JSON.parse(stored);
+                this.matches = data.matches || [];
+                data.players?.forEach(sp => {
+                    const p = this.players.find(ap => ap.id === sp.id);
+                    if (p) Object.assign(p, sp);
+                });
             }
         },
 
         saveData() {
-            try { 
-                localStorage.setItem('sports_data', JSON.stringify({
-                    matches: this.matches,
-                    players: this.players
-                })); 
-            }
-            catch (e) { 
-                console.error('数据保存失败:', e); 
-                this.showToast('数据保存失败'); 
-            }
+            localStorage.setItem('badminton_v2_data', JSON.stringify({
+                matches: this.matches, players: this.players
+            }));
         },
 
         showView(viewId) {
             document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
             document.getElementById(viewId).classList.add('active');
+            
+            document.querySelectorAll('.nav-item').forEach((item, idx) => {
+                const views = ['view-players', 'view-matches', 'view-rank'];
+                item.classList.toggle('active', viewId === views[idx]);
+            });
 
-            const navItems = document.querySelectorAll('.nav-item');
-            const viewMap = ['view-players', 'view-matches', 'view-rank'];
-            navItems.forEach((item, idx) => { item.classList.toggle('active', viewId === viewMap[idx]); });
-
-            const headerBtn = document.getElementById('header-actions');
+            const actions = document.getElementById('header-actions');
             if (viewId === 'view-players') {
-                headerBtn.innerHTML = `<button class="header-btn highlight" onclick="App.startTournament()">开始比赛</button>`;
+                actions.innerHTML = `<button class="header-btn" onclick="App.startTournament()">开始比赛</button>`;
                 this.renderPlayers();
             } else if (viewId === 'view-matches') {
-                headerBtn.innerHTML = `<button class="header-btn" onclick="App.clearMatches()" style="color: var(--danger)">重置赛事</button>`;
+                actions.innerHTML = `<button class="header-btn" style="color:var(--danger)" onclick="App.clearMatches()">重置</button>`;
                 this.renderMatches();
             } else {
-                headerBtn.innerHTML = "";
+                actions.innerHTML = "";
                 this.renderRank();
             }
         },
 
         renderPlayers() {
             const grid = document.getElementById('player-grid');
-            grid.innerHTML = this.players.map(p => {
-                const initial = p.name[0];
-                return `
-                    <div class="player-card ${this.selectedIds.includes(p.id) ? 'selected' : ''}" 
-                         onclick="App.toggleSelect(${p.id})" 
-                         onmousedown="App.startLongPress(${p.id})"
-                         ontouchstart="App.startLongPress(${p.id})"
-                         onmouseup="App.endLongPress()"
-                         ontouchend="App.endLongPress()"
-                         onmouseleave="App.endLongPress()"
-                         ontouchcancel="App.endLongPress()">
-                        <div class="player-img-wrapper">
-                            <img src="${p.avatar}" class="player-img" alt="${this.escapeHtml(p.name)}" onerror="this.classList.add('hidden');this.parentElement.querySelector('.player-img-placeholder').classList.remove('hidden')">
-                            <div class="player-img-placeholder hidden">${initial}</div>
-                        </div>
-                        <div class="player-info">
-                            <div class="player-name">${this.escapeHtml(p.name)}</div>
-                            <div class="player-title">${this.escapeHtml(p.title)}</div>
-                        </div>
-                        <div class="select-indicator">✓</div>
+            grid.innerHTML = this.players.map(p => `
+                <div class="player-card ${this.selectedIds.includes(p.id) ? 'selected' : ''}" 
+                     onclick="App.toggleSelect(${p.id})"
+                     ontouchstart="App.startLongPress(${p.id})"
+                     ontouchend="App.endLongPress()">
+                    <div class="player-img-wrapper">
+                        <img src="${p.avatar}" class="player-img" onerror="this.src='https://via.placeholder.com/200x200?text=Player'">
                     </div>
-                `;
-            }).join('');
+                    <div class="player-info">
+                        <div class="player-name">${p.name}</div>
+                        <div class="player-title">${p.title}</div>
+                    </div>
+                </div>
+            `).join('');
         },
 
         startLongPress(id) {
-            this.isLongPressTriggered = false; // 重置标记
             this.longPressTimer = setTimeout(() => {
-                this.isLongPressTriggered = true; // 标记已触发长按
-                this.currentEditPlayerId = id;
-                this.openLoginModal();
-            }, 600); // 稍微延长一点防止误触
+                if (!this.checkAuth()) return;
+                if (this.currentUser.id !== id) {
+                    this.showToast("无权编辑其他球员");
+                    return;
+                }
+                this.openEditModal(id);
+            }, 800);
         },
 
-        endLongPress() {
-            if (this.longPressTimer) {
-                clearTimeout(this.longPressTimer);
-                this.longPressTimer = null;
-            }
-        },
+        endLongPress() { clearTimeout(this.longPressTimer); },
 
         toggleSelect(id) {
-            // 修复：如果刚刚触发了长按，则不执行选中逻辑
-            if (this.isLongPressTriggered) {
-                this.isLongPressTriggered = false;
-                return;
-            }
             const idx = this.selectedIds.indexOf(id);
-            if (idx > -1) { this.selectedIds.splice(idx, 1); }
-            else { this.selectedIds.push(id); }
+            if (idx > -1) this.selectedIds.splice(idx, 1);
+            else this.selectedIds.push(id);
             this.renderPlayers();
         },
 
-        openLoginModal() {
-            document.getElementById('login-modal').classList.add('active');
-            document.getElementById('login-code').value = '';
-            document.getElementById('login-code').focus();
-        },
-
-        closeLoginModal() {
-            document.getElementById('login-modal').classList.remove('active');
-            // 注意：这里暂时不清除 ID，因为 submitLogin 还要用
-        },
-
-        submitLogin() {
-            const code = document.getElementById('login-code').value.trim();
-            if (!code) {
-                this.showToast("请输入登录号");
-                return;
-            }
-
-            const player = this.getPlayerById(this.currentEditPlayerId);
-            if (!player) return;
-
-            if (player.loginCode !== code) {
-                this.showToast("登录号错误，无权编辑此球员");
-                return;
-            }
-
-            const targetId = this.currentEditPlayerId; // 关键修复：暂存ID防止被 closeLoginModal 清除
-            this.currentLoginCode = code;
-            this.closeLoginModal();
-            this.openEditModal(targetId); 
-        },
-
-        openEditModal(playerId) {
-            const player = this.getPlayerById(playerId);
-            if (!player) return;
+        startTournament() {
+            if (!this.checkAuth()) return;
+            if (this.selectedIds.length < 2) return this.showToast("请至少选择2位球员");
             
-            this.currentEditPlayerId = playerId; // 关键修复：确保编辑状态绑定到正确球员
-
-            document.getElementById('edit-title').textContent = `编辑 ${player.name} 的信息`;
-            document.getElementById('edit-name').value = player.name;
-            document.getElementById('edit-title-input').value = player.title;
-            
-            const preview = document.getElementById('avatar-preview');
-            if (player.avatar) {
-                preview.innerHTML = `<img src="${player.avatar}" alt="">`;
-            } else {
-                preview.innerHTML = '<div style="color: var(--text-sub); font-size: 12px;">预览图片</div>';
+            this.matches = [];
+            for (let i = 0; i < this.selectedIds.length; i++) {
+                for (let j = i + 1; j < this.selectedIds.length; j++) {
+                    this.matches.push({
+                        id: Date.now() + Math.random(),
+                        p1Id: this.selectedIds[i], p2Id: this.selectedIds[j],
+                        s1: null, s2: null, done: false
+                    });
+                }
             }
+            this.saveData();
+            this.showView('view-matches');
+        },
 
-            const videoInfo = document.getElementById('video-info');
-            if (player.videoUrl) {
-                videoInfo.innerHTML = '✓ 已上传视频';
-            } else {
-                videoInfo.innerHTML = '未上传视频';
-            }
-
+        openEditModal(id) {
+            const p = this.players.find(x => x.id === id);
+            document.getElementById('edit-name').value = p.name;
+            document.getElementById('edit-title-input').value = p.title;
+            document.getElementById('avatar-preview').innerHTML = `<img src="${p.avatar}">`;
             document.getElementById('edit-player-modal').classList.add('active');
         },
 
-        closeEditModal() {
-            document.getElementById('edit-player-modal').classList.remove('active');
-            this.currentEditPlayerId = null;
-            this.currentLoginCode = null;
+        submitEditPlayer() {
+            const p = this.currentUser;
+            p.name = document.getElementById('edit-name').value;
+            p.title = document.getElementById('edit-title-input').value;
+            this.saveData();
+            this.closeModal('edit-player-modal');
+            this.renderPlayers();
+            this.showToast("资料已更新");
         },
 
         handleAvatarUpload() {
             const file = document.getElementById('avatar-upload').files[0];
-            if (!file) return;
-
             const reader = new FileReader();
             reader.onload = (e) => {
-                const preview = document.getElementById('avatar-preview');
-                preview.innerHTML = `<img src="${e.target.result}" alt="">`;
-                
-                if (!this.currentEditPlayerId) return;
-                const player = this.getPlayerById(this.currentEditPlayerId);
-                if (player) {
-                    player.avatar = e.target.result;
-                }
+                document.getElementById('avatar-preview').innerHTML = `<img src="${e.target.result}">`;
+                this.currentUser.avatar = e.target.result;
             };
             reader.readAsDataURL(file);
         },
 
         handleVideoUpload() {
             const file = document.getElementById('video-upload').files[0];
-            if (!file) return;
-
-            const videoInfo = document.getElementById('video-info');
-            videoInfo.innerHTML = `✓ 已选择: ${file.name}`;
-
-            if (!this.currentEditPlayerId) return;
-            const player = this.getPlayerById(this.currentEditPlayerId);
-            if (player) {
-                const reader = new FileReader();
-                reader.onload = (e) => {
-                    player.videoUrl = e.target.result;
-                };
-                reader.readAsDataURL(file);
-            }
+            if(file) document.getElementById('video-info').textContent = "✓ 已选择: " + file.name;
         },
-
-        submitEditPlayer() {
-            if (!this.currentEditPlayerId) return;
-            const player = this.getPlayerById(this.currentEditPlayerId);
-            if (!player) return;
-
-            const newName = document.getElementById('edit-name').value.trim();
-            const newTitle = document.getElementById('edit-title-input').value.trim();
-
-            if (!newName || !newTitle) {
-                this.showToast("名字和称号不能为空");
-                return;
-            }
-
-            player.name = newName;
-            player.title = newTitle;
-
-            this.saveData();
-            this.closeEditModal();
-            this.showToast("✓ 球员信息已保存");
-            this.renderPlayers();
-        },
-
-        startTournament() {
-            if (this.selectedIds.length < 2) { this.showToast("请至少选择2位球员"); return; }
-
-            this.matches = [];
-            let matchCount = 0;
-
-            for (let i = 0; i < this.selectedIds.length; i++) {
-                for (let j = i + 1; j < this.selectedIds.length; j++) {
-                    this.matches.push({
-                        id: Date.now() + i * 1000 + j,
-                        p1Id: this.selectedIds[i],
-                        p2Id: this.selectedIds[j],
-                        s1: null, s2: null, done: false
-                    });
-                    matchCount++;
-                }
-            }
-
-            this.saveData();
-            this.rankedCache = null;
-            this.showToast(`✓ 生成${matchCount}场比赛`);
-            this.showView('view-matches');
-        },
-
-        getPlayerById(id) { return this.players.find(p => p.id === id); },
 
         renderMatches() {
             const list = document.getElementById('match-list');
-            if (this.matches.length === 0) { list.innerHTML = `<div class="empty-state">去"球员"页面选择对手开始比赛</div>`; return; }
-
+            if (!this.matches.length) { list.innerHTML = `<div style="text-align:center; padding:100px 20px; color:#999;">暂无比赛，去球员页开始</div>`; return; }
+            
             list.innerHTML = this.matches.map(m => {
-                const p1 = this.getPlayerById(m.p1Id);
-                const p2 = this.getPlayerById(m.p2Id);
-                if (!p1 || !p2) return '';
-
-                const p1Initial = p1.name[0];
-                const p2Initial = p2.name[0];
-
+                const p1 = this.players.find(x => x.id === m.p1Id);
+                const p2 = this.players.find(x => x.id === m.p2Id);
                 return `
-                    <div class="match-card ${m.done ? 'completed' : ''}" ${!m.done ? `onclick="App.openScore(${m.id})"` : ''}>
-                        <div class="match-row">
-                            <div class="match-player">
-                                <img src="${p1.avatar}" class="match-avatar" alt="${this.escapeHtml(p1.name)}" onerror="this.classList.add('hidden');this.parentElement.querySelector('.match-avatar-placeholder').classList.add('show')">
-                                <div class="match-avatar-placeholder">${p1Initial}</div>
-                                <div class="match-name">${this.escapeHtml(p1.name)}</div>
+                    <div class="match-card" style="background:#FFF; margin:12px 16px; padding:20px; border-radius:20px;" onclick="App.openScore(${m.id})">
+                        <div style="display:flex; justify-content:space-between; align-items:center;">
+                            <div style="text-align:center; width:80px;">
+                                <img src="${p1.avatar}" style="width:50px; height:50px; border-radius:25px; object-fit:cover;">
+                                <div style="font-size:12px; font-weight:600; margin-top:5px;">${p1.name}</div>
                             </div>
-                            <div class="match-vs">${m.done ? '已完赛' : '未开始'}</div>
-                            <div class="match-player">
-                                <img src="${p2.avatar}" class="match-avatar" alt="${this.escapeHtml(p2.name)}" onerror="this.classList.add('hidden');this.parentElement.querySelector('.match-avatar-placeholder').classList.add('show')">
-                                <div class="match-avatar-placeholder">${p2Initial}</div>
-                                <div class="match-name">${this.escapeHtml(p2.name)}</div>
+                            <div style="font-weight:800; font-size:20px; color:${m.done ? '#000' : '#DDD'}">
+                                ${m.done ? `${m.s1} : ${m.s2}` : 'VS'}
+                            </div>
+                            <div style="text-align:center; width:80px;">
+                                <img src="${p2.avatar}" style="width:50px; height:50px; border-radius:25px; object-fit:cover;">
+                                <div style="font-size:12px; font-weight:600; margin-top:5px;">${p2.name}</div>
                             </div>
                         </div>
-                        ${m.done ? `<div class="match-score">${m.s1} : ${m.s2}</div>` : ''}
                     </div>
                 `;
             }).join('');
         },
 
         openScore(id) {
-            const match = this.matches.find(m => m.id === id);
-            if (!match) return;
-
-            const p1 = this.getPlayerById(match.p1Id);
-            const p2 = this.getPlayerById(match.p2Id);
-            if (!p1 || !p2) return;
-
+            if (!this.checkAuth()) return;
             this.currentMatchId = id;
+            const m = this.matches.find(x => x.id === id);
+            const p1 = this.players.find(x => x.id === m.p1Id);
+            const p2 = this.players.find(x => x.id === m.p2Id);
             document.getElementById('m-p1-name').textContent = p1.name;
             document.getElementById('m-p2-name').textContent = p2.name;
-            document.getElementById('m-s1').value = "";
-            document.getElementById('m-s2').value = "";
-            document.getElementById('m-s1').focus();
             document.getElementById('score-modal').classList.add('active');
         },
 
         submitScore() {
-            const s1Str = document.getElementById('m-s1').value.trim();
-            const s2Str = document.getElementById('m-s2').value.trim();
-
-            if (!s1Str || !s2Str) { this.showToast("请输入完整比分"); return; }
-
-            const s1 = parseInt(s1Str);
-            const s2 = parseInt(s2Str);
-
-            if (isNaN(s1) || isNaN(s2) || s1 < 0 || s2 < 0) { this.showToast("请输入有效的比分"); return; }
-
-            const match = this.matches.find(m => m.id === this.currentMatchId);
-            if (!match) return;
-
-            const p1 = this.getPlayerById(match.p1Id);
-            const p2 = this.getPlayerById(match.p2Id);
-            if (!p1 || !p2) return;
-
-            match.s1 = s1;
-            match.s2 = s2;
-            match.done = true;
-
-            p1.played++;
-            p2.played++;
-            p1.totalScore += s1;
-            p2.totalScore += s2;
-
-            if (s1 > s2) { p1.wins++; }
-            else if (s2 > s1) { p2.wins++; }
+            const s1 = parseInt(document.getElementById('m-s1').value);
+            const s2 = parseInt(document.getElementById('m-s2').value);
+            const m = this.matches.find(x => x.id === this.currentMatchId);
+            
+            const p1 = this.players.find(x => x.id === m.p1Id);
+            const p2 = this.players.find(x => x.id === m.p2Id);
+            
+            m.s1 = s1; m.s2 = s2; m.done = true;
+            p1.played++; p2.played++;
+            p1.totalScore += s1; p2.totalScore += s2;
+            if(s1 > s2) p1.wins++; else if(s2 > s1) p2.wins++;
 
             this.saveData();
-            this.rankedCache = null;
-            this.closeModal();
-            this.showToast("✓ 比分已记录");
-            this.renderMatches();
-        },
-
-        closeModal() {
-            document.getElementById('score-modal').classList.remove('active');
-            this.currentMatchId = null;
-        },
-
-        clearMatches() {
-            if (!confirm("确定要重置当前赛事吗？")) return;
-            this.matches = [];
-            this.selectedIds = [];
-            
-            // 清零排行积分
-            this.players.forEach(p => {
-                p.wins = 0;
-                p.played = 0;
-                p.totalScore = 0;
-            });
-            
-            this.saveData();
-            this.rankedCache = null;
-            this.showToast("✓ 赛事已重置，排行积分已清零");
+            this.closeModal('score-modal');
             this.renderMatches();
         },
 
         renderRank() {
-            const list = document.getElementById('rank-list');
-            const sorted = this.getRankedPlayers();
-
-            list.innerHTML = sorted.map((p, i) => {
-                const initial = p.name[0];
-                return `
-                    <div class="rank-item">
-                        <div class="rank-num">${i + 1}</div>
-                        <img src="${p.avatar}" class="rank-avatar" alt="${this.escapeHtml(p.name)}" onerror="this.classList.add('hidden');this.parentElement.querySelector('.rank-avatar-placeholder').classList.add('show')">
-                        <div class="rank-avatar-placeholder">${initial}</div>
-                        <div class="rank-info">
-                            <div class="rank-info-name">${this.escapeHtml(p.name)}</div>
-                            <div class="rank-info-stats">出战 ${p.played} 场 · 总得分 ${p.totalScore}</div>
-                        </div>
-                        <div class="rank-points">${p.totalScore} 分</div>
+            const sorted = [...this.players].sort((a, b) => b.totalScore - a.totalScore);
+            document.getElementById('rank-list').innerHTML = sorted.map((p, i) => `
+                <div style="display:flex; align-items:center; background:#FFF; margin:8px 16px; padding:15px; border-radius:18px;">
+                    <div style="width:30px; font-weight:800; color:var(--primary)">${i+1}</div>
+                    <img src="${p.avatar}" style="width:40px; height:40px; border-radius:20px; margin:0 12px;">
+                    <div style="flex:1">
+                        <div style="font-weight:700;">${p.name}</div>
+                        <div style="font-size:11px; color:#999;">胜率 ${p.played ? Math.round(p.wins/p.played*100) : 0}%</div>
                     </div>
-                `;
-            }).join('');
+                    <div style="font-weight:800; color:var(--success)">${p.totalScore}</div>
+                </div>
+            `).join('');
         },
 
-        getRankedPlayers() {
-            if (!this.rankedCache) {
-                this.rankedCache = [...this.players].sort((a, b) => {
-                    return b.totalScore - a.totalScore;
-                });
+        clearMatches() {
+            if (!this.checkAuth()) return;
+            if (confirm("清空赛事将重置所有积分，确定吗？")) {
+                this.matches = [];
+                this.players.forEach(p => { p.wins = 0; p.played = 0; p.totalScore = 0; });
+                this.saveData();
+                this.renderMatches();
             }
-            return this.rankedCache;
         },
 
-        showToast(message) {
-            const toast = document.createElement('div');
-            toast.className = 'toast';
-            toast.textContent = message;
-            document.body.appendChild(toast);
-
-            setTimeout(() => {
-                toast.style.opacity = '0';
-                setTimeout(() => toast.remove(), 300);
-            }, 2000);
-        },
-
-        escapeHtml(text) {
-            if (typeof text !== 'string') return '';
-            const map = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' };
-            return text.replace(/[&<>"']/g, m => map[m]);
+        closeModal(id) { document.getElementById(id).classList.remove('active'); },
+        
+        showToast(msg) {
+            const t = document.createElement('div');
+            t.className = 'toast';
+            t.textContent = msg;
+            document.body.appendChild(t);
+            setTimeout(() => t.remove(), 2000);
         }
     };
 
-    document.addEventListener('DOMContentLoaded', () => App.init());
+    App.init();
 </script>
-
 </body>
 </html>
