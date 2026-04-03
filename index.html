@@ -64,6 +64,7 @@
             background: var(--card-bg); backdrop-filter: blur(10px); border: 2px solid transparent; border-radius: 20px;
             overflow: hidden; position: relative; display: flex; flex-direction: column; cursor: pointer; height: 220px;
             transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1); box-shadow: none; will-change: transform;
+            user-select: none; touch-action: manipulation;
         }
 
         .player-card:hover { transform: translateY(-4px); box-shadow: var(--shadow-md); background: rgba(255, 255, 255, 0.9); }
@@ -197,8 +198,8 @@
 
         .modal-content {
             background: var(--glass-bg); backdrop-filter: blur(20px); border: 1px solid var(--glass-border);
-            width: 85%; max-width: 340px; border-radius: 28px; padding: 28px; box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
-            animation: slideUp 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+            width: 85%; max-width: 380px; border-radius: 28px; padding: 28px; box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
+            animation: slideUp 0.4s cubic-bezier(0.34, 1.56, 0.64, 1); max-height: 90vh; overflow-y: auto;
         }
         
         @keyframes slideUp { from { transform: translateY(40px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
@@ -209,14 +210,32 @@
         .score-player { text-align: center; flex: 1; }
         .score-player-name { font-weight: 600; margin-bottom: 12px; color: var(--text-main); word-break: break-word; font-size: 14px; }
 
-        .score-input {
-            width: 70px; padding: 12px; text-align: center; font-size: 18px; font-weight: 700;
+        .score-input, .form-input {
+            width: 100%; padding: 12px; text-align: center; font-size: 16px; font-weight: 600;
             border: 2px solid var(--glass-border); background: rgba(255, 255, 255, 0.5); border-radius: 12px; outline: none; transition: all 0.2s ease;
+            margin-bottom: 12px;
         }
         
-        .score-input:focus { border-color: var(--primary); background: rgba(255, 255, 255, 0.9); box-shadow: 0 0 0 4px rgba(0, 122, 255, 0.1); }
+        .score-input:focus, .form-input:focus { border-color: var(--primary); background: rgba(255, 255, 255, 0.9); box-shadow: 0 0 0 4px rgba(0, 122, 255, 0.1); }
 
         .score-vs { font-weight: 800; font-size: 16px; color: var(--text-sub); padding: 0 8px; }
+
+        .form-group { margin-bottom: 20px; }
+        .form-label { display: block; font-size: 14px; font-weight: 600; color: var(--text-main); margin-bottom: 8px; }
+        .form-hint { font-size: 12px; color: var(--text-sub); margin-top: 4px; }
+
+        .file-upload-btn {
+            width: 100%; padding: 12px; background: var(--primary); color: white; border: none; border-radius: 12px;
+            font-size: 14px; font-weight: 600; cursor: pointer; transition: all 0.2s ease; margin-bottom: 12px;
+        }
+        .file-upload-btn:active { transform: scale(0.95); }
+
+        .upload-preview {
+            width: 100%; height: 150px; border: 2px dashed var(--primary); border-radius: 12px;
+            display: flex; align-items: center; justify-content: center; background: rgba(0, 122, 255, 0.05);
+            margin-bottom: 12px; overflow: hidden;
+        }
+        .upload-preview img { width: 100%; height: 100%; object-fit: cover; }
 
         .btn-full {
             width: 100%; background: var(--primary); color: white; border: none; border-radius: 14px; padding: 14px 20px;
@@ -297,6 +316,56 @@
         </div>
     </nav>
 
+    <!-- 登录弹窗 -->
+    <div class="modal" id="login-modal">
+        <div class="modal-content">
+            <div class="modal-title">登录编辑</div>
+            <div class="form-group">
+                <label class="form-label">请输入登录号</label>
+                <input type="text" id="login-code" class="form-input" placeholder="输入您的登录号" inputmode="numeric">
+            </div>
+            <button class="btn-full" onclick="App.submitLogin()">确定</button>
+            <button class="btn-full secondary" onclick="App.closeLoginModal()">取消</button>
+        </div>
+    </div>
+
+    <!-- 编辑球员弹窗 -->
+    <div class="modal" id="edit-player-modal">
+        <div class="modal-content">
+            <div class="modal-title" id="edit-title">编辑球员信息</div>
+            
+            <div class="form-group">
+                <label class="form-label">球员形象（建议尺寸360×300px）</label>
+                <button class="file-upload-btn" onclick="document.getElementById('avatar-upload').click()">上传球员形象 JPG/PNG</button>
+                <input type="file" id="avatar-upload" accept="image/jpeg,image/png" style="display:none;" onchange="App.handleAvatarUpload()">
+                <div class="upload-preview" id="avatar-preview">
+                    <div style="color: var(--text-sub); font-size: 12px;">预览图片</div>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">名字</label>
+                <input type="text" id="edit-name" class="form-input" placeholder="输入球员名字">
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">称号</label>
+                <input type="text" id="edit-title-input" class="form-input" placeholder="输入球员称号">
+            </div>
+
+            <div class="form-group">
+                <label class="form-label" style="margin-bottom: 16px;">AI技术分析</label>
+                <button class="file-upload-btn" onclick="document.getElementById('video-upload').click()">上传视频</button>
+                <input type="file" id="video-upload" accept="video/*" style="display:none;" onchange="App.handleVideoUpload()">
+                <div id="video-info" style="font-size: 12px; color: var(--text-sub); margin-top: 8px;"></div>
+            </div>
+
+            <button class="btn-full" onclick="App.submitEditPlayer()">保存</button>
+            <button class="btn-full secondary" onclick="App.closeEditModal()">取消</button>
+        </div>
+    </div>
+
+    <!-- 比分弹窗 -->
     <div class="modal" id="score-modal">
         <div class="modal-content">
             <div class="modal-title">登记比赛比分</div>
@@ -320,18 +389,21 @@
 <script>
     const App = {
         players: [
-            { id: 1, name: "阿水", title: "摸鱼小弟", avatar: "https://github.com/ywingsui-max/yumaoqiu-assets/blob/main/as.jpg?raw=true", wins: 0, played: 0, totalScore: 0 },
-            { id: 2, name: "高总", title: "一击必杀", avatar: "https://github.com/ywingsui-max/yumaoqiu-assets/blob/main/gz.jpg?raw=true", wins: 0, played: 0, totalScore: 0 },
-            { id: 3, name: "C炜", title: "旋风小霸王", avatar: "https://github.com/ywingsui-max/yumaoqiu-assets/blob/main/cwei.jpg?raw=true", wins: 0, played: 0, totalScore: 0 },
-            { id: 4, name: "鸿哥", title: "大师选手", avatar: "https://github.com/ywingsui-max/yumaoqiu-assets/blob/main/ch.jpg?raw=true", wins: 0, played: 0, totalScore: 0 },
-            { id: 5, name: "春阳", title: "青阳剑客", avatar: "https://github.com/ywingsui-max/yumaoqiu-assets/blob/main/cy.jpg?raw=true", wins: 0, played: 0, totalScore: 0 },
-            { id: 6, name: "蕭", title: "敏思剑君", avatar: "https://github.com/ywingsui-max/yumaoqiu-assets/blob/main/jm.jpg?raw=true", wins: 0, played: 0, totalScore: 0 }
+            { id: 1, name: "阿水", title: "摸鱼小弟", avatar: "https://github.com/ywingsui-max/yumaoqiu-assets/blob/main/as.jpg?raw=true", loginCode: "5899", wins: 0, played: 0, totalScore: 0, videoUrl: "" },
+            { id: 2, name: "高总", title: "一击必杀", avatar: "https://github.com/ywingsui-max/yumaoqiu-assets/blob/main/gz.jpg?raw=true", loginCode: "0716", wins: 0, played: 0, totalScore: 0, videoUrl: "" },
+            { id: 3, name: "C炜", title: "旋风小霸王", avatar: "https://github.com/ywingsui-max/yumaoqiu-assets/blob/main/cwei.jpg?raw=true", loginCode: "0000", wins: 0, played: 0, totalScore: 0, videoUrl: "" },
+            { id: 4, name: "鸿哥", title: "大师选手", avatar: "https://github.com/ywingsui-max/yumaoqiu-assets/blob/main/ch.jpg?raw=true", loginCode: "3333", wins: 0, played: 0, totalScore: 0, videoUrl: "" },
+            { id: 5, name: "春阳", title: "就是干你", avatar: "https://github.com/ywingsui-max/yumaoqiu-assets/blob/main/cy.jpg?raw=true", loginCode: "2222", wins: 0, played: 0, totalScore: 0, videoUrl: "" },
+            { id: 6, name: "蕭", title: "敏思剑君", avatar: "https://github.com/ywingsui-max/yumaoqiu-assets/blob/main/jm.jpg?raw=true", loginCode: "1111", wins: 0, played: 0, totalScore: 0, videoUrl: "" }
         ],
         
         matches: [],
         selectedIds: [],
         currentMatchId: null,
+        currentEditPlayerId: null,
+        currentLoginCode: null,
         rankedCache: null,
+        longPressTimer: null,
 
         init() { this.loadData(); this.showView('view-players'); },
 
@@ -341,7 +413,6 @@
                 if (stored) {
                     const data = JSON.parse(stored);
                     this.matches = data.matches || [];
-                    // 合并已保存的球员数据和新增球员
                     if (data.players && data.players.length > 0) {
                         data.players.forEach(savedPlayer => {
                             const existingPlayer = this.players.find(p => p.id === savedPlayer.id);
@@ -349,6 +420,10 @@
                                 existingPlayer.wins = savedPlayer.wins;
                                 existingPlayer.played = savedPlayer.played;
                                 existingPlayer.totalScore = savedPlayer.totalScore;
+                                existingPlayer.name = savedPlayer.name;
+                                existingPlayer.title = savedPlayer.title;
+                                existingPlayer.avatar = savedPlayer.avatar;
+                                existingPlayer.videoUrl = savedPlayer.videoUrl || "";
                             }
                         });
                     }
@@ -400,7 +475,14 @@
             grid.innerHTML = this.players.map(p => {
                 const initial = p.name[0];
                 return `
-                    <div class="player-card ${this.selectedIds.includes(p.id) ? 'selected' : ''}" onclick="App.toggleSelect(${p.id})">
+                    <div class="player-card ${this.selectedIds.includes(p.id) ? 'selected' : ''}" 
+                         onclick="App.toggleSelect(${p.id})" 
+                         onmousedown="App.startLongPress(${p.id})"
+                         ontouchstart="App.startLongPress(${p.id})"
+                         onmouseup="App.endLongPress()"
+                         ontouchend="App.endLongPress()"
+                         onmouseleave="App.endLongPress()"
+                         ontouchcancel="App.endLongPress()">
                         <div class="player-img-wrapper">
                             <img src="${p.avatar}" class="player-img" alt="${this.escapeHtml(p.name)}" onerror="this.classList.add('hidden');this.parentElement.querySelector('.player-img-placeholder').classList.remove('hidden')">
                             <div class="player-img-placeholder hidden">${initial}</div>
@@ -415,10 +497,146 @@
             }).join('');
         },
 
+        startLongPress(id) {
+            this.longPressTimer = setTimeout(() => {
+                this.currentEditPlayerId = id;
+                this.openLoginModal();
+            }, 500);
+        },
+
+        endLongPress() {
+            if (this.longPressTimer) {
+                clearTimeout(this.longPressTimer);
+                this.longPressTimer = null;
+            }
+        },
+
         toggleSelect(id) {
+            if (this.longPressTimer) return;
             const idx = this.selectedIds.indexOf(id);
             if (idx > -1) { this.selectedIds.splice(idx, 1); }
             else { this.selectedIds.push(id); }
+            this.renderPlayers();
+        },
+
+        openLoginModal() {
+            document.getElementById('login-modal').classList.add('active');
+            document.getElementById('login-code').value = '';
+            document.getElementById('login-code').focus();
+        },
+
+        closeLoginModal() {
+            document.getElementById('login-modal').classList.remove('active');
+            this.currentEditPlayerId = null;
+            this.currentLoginCode = null;
+        },
+
+        submitLogin() {
+            const code = document.getElementById('login-code').value.trim();
+            if (!code) {
+                this.showToast("请输入登录号");
+                return;
+            }
+
+            const player = this.getPlayerById(this.currentEditPlayerId);
+            if (!player) return;
+
+            if (player.loginCode !== code) {
+                this.showToast("登录号错误，无权编辑此球员");
+                return;
+            }
+
+            this.currentLoginCode = code;
+            this.closeLoginModal();
+            this.openEditModal(this.currentEditPlayerId);
+        },
+
+        openEditModal(playerId) {
+            const player = this.getPlayerById(playerId);
+            if (!player) return;
+
+            document.getElementById('edit-title').textContent = `编辑 ${player.name} 的信息`;
+            document.getElementById('edit-name').value = player.name;
+            document.getElementById('edit-title-input').value = player.title;
+            
+            const preview = document.getElementById('avatar-preview');
+            if (player.avatar) {
+                preview.innerHTML = `<img src="${player.avatar}" alt="">`;
+            } else {
+                preview.innerHTML = '<div style="color: var(--text-sub); font-size: 12px;">预览图片</div>';
+            }
+
+            const videoInfo = document.getElementById('video-info');
+            if (player.videoUrl) {
+                videoInfo.innerHTML = '✓ 已上传视频';
+            } else {
+                videoInfo.innerHTML = '未上传视频';
+            }
+
+            document.getElementById('edit-player-modal').classList.add('active');
+        },
+
+        closeEditModal() {
+            document.getElementById('edit-player-modal').classList.remove('active');
+            this.currentEditPlayerId = null;
+            this.currentLoginCode = null;
+        },
+
+        handleAvatarUpload() {
+            const file = document.getElementById('avatar-upload').files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                const preview = document.getElementById('avatar-preview');
+                preview.innerHTML = `<img src="${e.target.result}" alt="">`;
+                
+                if (!this.currentEditPlayerId) return;
+                const player = this.getPlayerById(this.currentEditPlayerId);
+                if (player) {
+                    player.avatar = e.target.result;
+                }
+            };
+            reader.readAsDataURL(file);
+        },
+
+        handleVideoUpload() {
+            const file = document.getElementById('video-upload').files[0];
+            if (!file) return;
+
+            const videoInfo = document.getElementById('video-info');
+            videoInfo.innerHTML = `✓ 已选择: ${file.name}`;
+
+            if (!this.currentEditPlayerId) return;
+            const player = this.getPlayerById(this.currentEditPlayerId);
+            if (player) {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    player.videoUrl = e.target.result;
+                };
+                reader.readAsDataURL(file);
+            }
+        },
+
+        submitEditPlayer() {
+            if (!this.currentEditPlayerId) return;
+            const player = this.getPlayerById(this.currentEditPlayerId);
+            if (!player) return;
+
+            const newName = document.getElementById('edit-name').value.trim();
+            const newTitle = document.getElementById('edit-title-input').value.trim();
+
+            if (!newName || !newTitle) {
+                this.showToast("名字和称号不能为空");
+                return;
+            }
+
+            player.name = newName;
+            player.title = newTitle;
+
+            this.saveData();
+            this.closeEditModal();
+            this.showToast("✓ 球员信息已保存");
             this.renderPlayers();
         },
 
@@ -544,9 +762,17 @@
             if (!confirm("确定要重置当前赛事吗？")) return;
             this.matches = [];
             this.selectedIds = [];
+            
+            // 清零排行积分
+            this.players.forEach(p => {
+                p.wins = 0;
+                p.played = 0;
+                p.totalScore = 0;
+            });
+            
             this.saveData();
             this.rankedCache = null;
-            this.showToast("✓ 赛事已重置");
+            this.showToast("✓ 赛事已重置，排行积分已清零");
             this.renderMatches();
         },
 
