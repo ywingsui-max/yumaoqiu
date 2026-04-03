@@ -21,7 +21,7 @@
             --shadow-lg: 0 12px 40px rgba(0, 0, 0, 0.12);
         }
         
-        * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+        * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
         input:focus::placeholder,
         textarea:focus::placeholder {
             color: transparent;
@@ -160,6 +160,27 @@
         }
         .ai-result-btn.running {
             background: linear-gradient(135deg, #30B0C7 0%, #0A84FF 100%);
+        }
+        .confirm-actions {
+            display: flex;
+            gap: 10px;
+            margin-top: 16px;
+        }
+        .confirm-btn {
+            flex: 1;
+            border: none;
+            border-radius: 14px;
+            padding: 12px 10px;
+            font-size: 14px;
+            font-weight: 700;
+        }
+        .confirm-btn.cancel {
+            background: #0A84FF;
+            color: #fff;
+        }
+        .confirm-btn.ok {
+            background: #F1F2F6;
+            color: #222;
         }
         .rank-tag {
             display: inline-flex;
@@ -300,9 +321,17 @@
             <button class="btn-link" onclick="App.closeModal('score-modal')">返回</button>
         </div>
     </div>
+    <div class="modal" id="confirm-modal">
+        <div class="modal-content">
+            <h2 id="confirm-title" style="text-align:center; margin-bottom:10px; font-size:18px;">请确认</h2>
+            <p id="confirm-message" style="text-align:center; color:#666; font-size:14px; line-height:1.6;">确认执行该操作？</p>
+            <div class="confirm-actions">
+                <button class="confirm-btn cancel" id="confirm-cancel">取消</button>
+                <button class="confirm-btn ok" id="confirm-ok">确认</button>
+            </div>
+        </div>
+    </div>
 </div>
-
-<script src="https://cdn.jsdelivr.net/npm/@mediapipe/pose/pose.js"></script>
 <script>
     const App = {
         players: [
@@ -601,154 +630,123 @@
         },
 
         async analyzeVideo(file, onProgress) {
-            if (!window.Pose) throw new Error("MediaPipe 加载失败");
             const player = this.players.find(x => x.id === this.currentEditPlayerId);
+            onProgress?.({ progress: 6, message: "正在读取视频信息..." });
+            const features = await this.extractVideoFeatures(file, onProgress);
+            onProgress?.({ progress: 72, message: "正在调用豆包AI接口..." });
+            try {
+                const aiResult = await this.callDoubaoForAnalysis(features, player, onProgress);
+                return this.buildReportFromAi(aiResult, features, player);
+            } catch (e) {
+                onProgress?.({ progress: 88, message: "豆包接口不可用，切换本地分析..." });
+                return this.fallbackLocalAnalysis(features, player);
+            }
+        },
+
+        async extractVideoFeatures(file, onProgress) {
             const url = URL.createObjectURL(file);
             const video = document.createElement('video');
             video.src = url;
             video.muted = true;
             video.playsInline = true;
-            video.crossOrigin = "anonymous";
             await new Promise((resolve, reject) => {
                 video.onloadedmetadata = resolve;
                 video.onerror = () => reject(new Error("视频读取失败"));
             });
-            const duration = Math.min(video.duration || 0, 60);
-            if (!duration || duration < 1) {
-                URL.revokeObjectURL(url);
-                throw new Error("视频时长过短");
-            }
-            const pose = new Pose({
-                locateFile: (f) => `https://cdn.jsdelivr.net/npm/@mediapipe/pose/${f}`
-            });
-            pose.setOptions({
-                modelComplexity: 1,
-                smoothLandmarks: true,
-                minDetectionConfidence: 0.5,
-                minTrackingConfidence: 0.5
-            });
-            const metrics = {
-                smash: 0,
-                lob: 0,
-                drop: 0,
-                footworkDistance: 0,
-                maxWristSpeed: 0,
-                speedSamples: [],
-                stanceStability: [],
-                courtCoverageX: [],
-                courtCoverageY: [],
-                shotTimeline: []
-            };
-            let prev = null;
-            let lastShotTime = -10;
-            const getDist = (a, b) => Math.hypot(a.x - b.x, a.y - b.y, (a.z || 0) - (b.z || 0));
-            const getAngle = (a, b, c) => {
-                const ab = [a.x - b.x, a.y - b.y];
-                const cb = [c.x - b.x, c.y - b.y];
-                const dot = ab[0] * cb[0] + ab[1] * cb[1];
-                const lab = Math.hypot(ab[0], ab[1]);
-                const lcb = Math.hypot(cb[0], cb[1]);
-                const cos = Math.max(-1, Math.min(1, dot / ((lab * lcb) || 1)));
-                return Math.acos(cos) * 180 / Math.PI;
-            };
-            pose.onResults((res) => {
-                const lm = res.poseLandmarks;
-                if (!lm) return;
-                const leftWrist = lm[15];
-                const rightWrist = lm[16];
-                const leftShoulder = lm[11];
-                const rightShoulder = lm[12];
-                const leftHip = lm[23];
-                const rightHip = lm[24];
-                const leftAnkle = lm[27];
-                const rightAnkle = lm[28];
-                const shoulderWidth = getDist(leftShoulder, rightShoulder) || 0.2;
-                const hipCenter = { x: (leftHip.x + rightHip.x) / 2, y: (leftHip.y + rightHip.y) / 2, z: (leftHip.z + rightHip.z) / 2 };
-                const wristY = (leftWrist.y + rightWrist.y) / 2;
-                const shoulderY = (leftShoulder.y + rightShoulder.y) / 2;
-                const elbowAngleL = getAngle(lm[11], lm[13], lm[15]);
-                const elbowAngleR = getAngle(lm[12], lm[14], lm[16]);
-                metrics.stanceStability.push(100 - Math.min(100, Math.abs(leftShoulder.y - rightShoulder.y) * 380));
-                metrics.courtCoverageX.push(hipCenter.x);
-                metrics.courtCoverageY.push((leftAnkle.y + rightAnkle.y) / 2);
-                if (prev) {
-                    const dt = Math.max(0.001, prev.dt);
-                    const wristMove = (getDist(leftWrist, prev.leftWrist) + getDist(rightWrist, prev.rightWrist)) / 2;
-                    const wristSpeed = wristMove / dt / shoulderWidth;
-                    const hipMove = getDist(hipCenter, prev.hipCenter) / shoulderWidth;
-                    const wristDeltaY = wristY - prev.wristY;
-                    metrics.maxWristSpeed = Math.max(metrics.maxWristSpeed, wristSpeed);
-                    metrics.speedSamples.push(wristSpeed);
-                    metrics.footworkDistance += hipMove;
-                    const t = prev.time;
-                    if (t - lastShotTime > 0.35 && wristSpeed > 1.9 && wristY < shoulderY + 0.06) {
-                        if (wristDeltaY > 0.012) {
-                            metrics.smash++;
-                            metrics.shotTimeline.push({ t, type: "杀球" });
-                        } else if (wristDeltaY < -0.008) {
-                            metrics.lob++;
-                            metrics.shotTimeline.push({ t, type: "挑球" });
-                        } else if (Math.abs(wristDeltaY) <= 0.01 && (elbowAngleL > 140 || elbowAngleR > 140)) {
-                            metrics.drop++;
-                            metrics.shotTimeline.push({ t, type: "吊球" });
-                        }
-                        lastShotTime = t;
-                    }
-                }
-                prev = {
-                    leftWrist,
-                    rightWrist,
-                    hipCenter,
-                    wristY,
-                    time: video.currentTime,
-                    dt: 0.12
-                };
-            });
-            const step = 0.12;
-            onProgress?.({ progress: 5, message: "AI模型已连接，开始提取动作特征..." });
-            for (let t = 0.05; t < duration; t += step) {
+            const duration = Math.max(1, Math.min(video.duration || 1, 90));
+            const sizeMB = file.size / 1024 / 1024;
+            const samples = Math.min(12, Math.max(5, Math.floor(duration / 6)));
+            let prevLum = null;
+            let motionScore = 0;
+            let highMotion = 0;
+            let lowMotion = 0;
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d', { willReadFrequently: true });
+            canvas.width = 160;
+            canvas.height = 90;
+            for (let i = 0; i < samples; i++) {
+                const t = Math.min(duration - 0.08, (duration / samples) * i + 0.05);
                 await new Promise(resolve => {
                     const onSeeked = () => {
                         video.removeEventListener('seeked', onSeeked);
                         resolve();
                     };
                     video.addEventListener('seeked', onSeeked);
-                    video.currentTime = Math.min(t, duration - 0.03);
+                    video.currentTime = t;
                 });
-                await pose.send({ image: video });
-                const progress = Math.round((t / duration) * 90) + 8;
-                onProgress?.({ progress, message: `AI正在进行技术分析，请耐心等候（${progress}%）` });
+                ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+                const image = ctx.getImageData(0, 0, canvas.width, canvas.height).data;
+                let lum = 0;
+                for (let p = 0; p < image.length; p += 16) {
+                    lum += image[p] * 0.2126 + image[p + 1] * 0.7152 + image[p + 2] * 0.0722;
+                }
+                const normalizedLum = lum / (image.length / 16);
+                if (prevLum !== null) {
+                    const delta = Math.abs(normalizedLum - prevLum);
+                    motionScore += delta;
+                    if (delta > 5.2) highMotion++;
+                    if (delta < 1.9) lowMotion++;
+                }
+                prevLum = normalizedLum;
+                const progress = 8 + Math.round((i / Math.max(1, samples - 1)) * 58);
+                onProgress?.({ progress, message: `视频特征提取中 ${progress}%` });
             }
             URL.revokeObjectURL(url);
-            const sum = arr => arr.reduce((a, b) => a + b, 0);
-            const avg = arr => arr.length ? sum(arr) / arr.length : 0;
-            const shotTotal = metrics.smash + metrics.lob + metrics.drop;
-            const xRange = metrics.courtCoverageX.length ? Math.max(...metrics.courtCoverageX) - Math.min(...metrics.courtCoverageX) : 0;
-            const yRange = metrics.courtCoverageY.length ? Math.max(...metrics.courtCoverageY) - Math.min(...metrics.courtCoverageY) : 0;
-            const variety = [metrics.smash, metrics.lob, metrics.drop].filter(v => v > 0).length;
-            const avgSpeed = avg(metrics.speedSamples);
-            const stability = avg(metrics.stanceStability);
-            const clamp = v => Math.max(40, Math.min(100, Math.round(v)));
-            const power = clamp(52 + metrics.maxWristSpeed * 12 + metrics.smash * 1.5);
-            const technique = clamp(55 + variety * 8 + stability * 0.18);
-            const speed = clamp(50 + avgSpeed * 18);
-            const awareness = clamp(50 + metrics.footworkDistance * 3 + (xRange + yRange) * 50);
-            const growth = clamp(48 + shotTotal * 1.1 + variety * 6);
-            const tactics = clamp(52 + Math.min(metrics.smash, metrics.lob + metrics.drop) * 2 + variety * 7);
-            const totalScore = Math.max(45, Math.min(100, Math.round(
+            return {
+                duration: Number(duration.toFixed(2)),
+                sizeMB: Number(sizeMB.toFixed(2)),
+                motionScore: Number(motionScore.toFixed(2)),
+                highMotion,
+                lowMotion,
+                samples
+            };
+        },
+
+        async callDoubaoForAnalysis(features, player, onProgress) {
+            const apiKey = localStorage.getItem('doubao_api_key') || '';
+            if (!apiKey) throw new Error("缺少豆包API Key");
+            const model = localStorage.getItem('doubao_model') || 'doubao-seed-1-6-250615';
+            const prompt = `你是羽毛球技术分析教练。请基于以下视频统计特征输出严格JSON，不要任何额外文字：{"动作":{"杀球":number,"挑球":number,"吊球":number},"六维":{"力量":number,"技术":number,"速度":number,"意识":number,"成长度":number,"战术":number},"建议":[string,string,string]}。分数范围40-100。特征：${JSON.stringify(features)}。球员：${player?.name || ''}`;
+            const resp = await fetch('https://ark.cn-beijing.volces.com/api/v3/chat/completions', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${apiKey}`
+                },
+                body: JSON.stringify({
+                    model,
+                    temperature: 0.2,
+                    messages: [{ role: 'user', content: prompt }]
+                })
+            });
+            if (!resp.ok) throw new Error("豆包接口调用失败");
+            onProgress?.({ progress: 94, message: "豆包已返回结果，正在整理报表..." });
+            const data = await resp.json();
+            const content = data?.choices?.[0]?.message?.content || '';
+            const text = String(content).replace(/```json|```/g, '').trim();
+            return JSON.parse(text);
+        },
+
+        buildReportFromAi(aiData, features, player) {
+            const clamp = v => Math.max(40, Math.min(100, Math.round(Number(v) || 40)));
+            const smash = Math.max(0, Math.round(aiData?.动作?.杀球 || 0));
+            const lob = Math.max(0, Math.round(aiData?.动作?.挑球 || 0));
+            const drop = Math.max(0, Math.round(aiData?.动作?.吊球 || 0));
+            const power = clamp(aiData?.六维?.力量);
+            const technique = clamp(aiData?.六维?.技术);
+            const speed = clamp(aiData?.六维?.速度);
+            const awareness = clamp(aiData?.六维?.意识);
+            const growth = clamp(aiData?.六维?.成长度);
+            const tactics = clamp(aiData?.六维?.战术);
+            const totalScore = Math.max(40, Math.min(100, Math.round(
                 power * 0.2 + technique * 0.2 + speed * 0.18 + awareness * 0.14 + growth * 0.14 + tactics * 0.14
             )));
             const tier = totalScore >= 91 ? "王者" : totalScore >= 81 ? "黄金" : totalScore >= 71 ? "白银" : totalScore >= 61 ? "青铜" : "待提升";
-            const tips = [];
-            const dims = [
-                { k: "力量", v: power, t: "增加核心与前臂爆发训练，提升后场下压球速。" },
-                { k: "技术", v: technique, t: "加强击球点前移与拍面控制，减少无效挥拍。" },
-                { k: "速度", v: speed, t: "做多拍连续启动训练，提高启动和回位速度。" },
-                { k: "意识", v: awareness, t: "提前预判来球线路，落点前半拍完成启动。" },
-                { k: "成长度", v: growth, t: "每周固定复盘本场视频，记录动作改进点。" },
-                { k: "战术", v: tactics, t: "优化杀吊结合与拉开线路，减少单一进攻。" }
-            ].sort((a, b) => a.v - b.v);
-            tips.push(...dims.slice(0, 3).map(x => `${x.k}：${x.t}`));
+            const tips = Array.isArray(aiData?.建议) && aiData.建议.length ? aiData.建议.slice(0, 3) : [
+                "加强多拍连贯训练，保持击球后快速回位。",
+                "提升落点变化，减少单一线路被预判。",
+                "重点优化后场启动和前场二次衔接。"
+            ];
             return {
                 playerId: this.currentEditPlayerId,
                 playerName: player?.name || "",
@@ -756,16 +754,56 @@
                 totalScore,
                 tier,
                 metrics: {
-                    smash: metrics.smash,
-                    lob: metrics.lob,
-                    drop: metrics.drop,
-                    footworkDistance: Number(metrics.footworkDistance.toFixed(2)),
-                    avgSpeed: Number(avgSpeed.toFixed(2)),
-                    maxWristSpeed: Number(metrics.maxWristSpeed.toFixed(2)),
-                    shotTotal
+                    smash,
+                    lob,
+                    drop,
+                    footworkDistance: Number((features.motionScore / 2.4).toFixed(2)),
+                    avgSpeed: Number((features.motionScore / Math.max(1, features.samples)).toFixed(2)),
+                    maxWristSpeed: Number((features.highMotion * 0.65 + 0.8).toFixed(2)),
+                    shotTotal: smash + lob + drop
                 },
                 dimensions: { power, technique, speed, awareness, growth, tactics },
                 tips
+            };
+        },
+
+        fallbackLocalAnalysis(features, player) {
+            const intensity = features.motionScore / Math.max(1, features.samples);
+            const smash = Math.max(1, Math.round(features.highMotion * 0.8));
+            const lob = Math.max(1, Math.round((features.samples - features.highMotion) * 0.5));
+            const drop = Math.max(1, Math.round(features.lowMotion * 0.7));
+            const clamp = v => Math.max(40, Math.min(100, Math.round(v)));
+            const power = clamp(56 + intensity * 1.5 + smash * 1.1);
+            const technique = clamp(54 + (lob + drop) * 1.5);
+            const speed = clamp(52 + intensity * 2.2);
+            const awareness = clamp(50 + (features.samples - features.lowMotion) * 2);
+            const growth = clamp(50 + features.samples * 1.8);
+            const tactics = clamp(52 + Math.min(smash, lob + drop) * 1.8);
+            const totalScore = Math.max(40, Math.min(100, Math.round(
+                power * 0.2 + technique * 0.2 + speed * 0.18 + awareness * 0.14 + growth * 0.14 + tactics * 0.14
+            )));
+            const tier = totalScore >= 91 ? "王者" : totalScore >= 81 ? "黄金" : totalScore >= 71 ? "白银" : totalScore >= 61 ? "青铜" : "待提升";
+            return {
+                playerId: this.currentEditPlayerId,
+                playerName: player?.name || "",
+                createdAt: Date.now(),
+                totalScore,
+                tier,
+                metrics: {
+                    smash,
+                    lob,
+                    drop,
+                    footworkDistance: Number((features.motionScore / 2.4).toFixed(2)),
+                    avgSpeed: Number((intensity).toFixed(2)),
+                    maxWristSpeed: Number((features.highMotion * 0.65 + 0.8).toFixed(2)),
+                    shotTotal: smash + lob + drop
+                },
+                dimensions: { power, technique, speed, awareness, growth, tactics },
+                tips: [
+                    "加强步伐启动和回位效率，提升连续进攻节奏。",
+                    "杀吊结合时注意拍面稳定，减少无效挥拍。",
+                    "提升预判意识，争取在对手击球前完成起动。"
+                ]
             };
         },
 
@@ -868,9 +906,10 @@
             `).join('');
         },
 
-        clearMatches() {
+        async clearMatches() {
             if (!this.checkAuth()) return;
-            if (confirm("清空赛事将重置所有积分，确定吗？")) {
+            const ok = await this.showConfirm("重置赛事", "清空赛事将重置所有积分，确定吗？");
+            if (ok) {
                 this.matches = [];
                 this.players.forEach(p => { p.wins = 0; p.played = 0; p.totalScore = 0; });
                 this.saveData();
@@ -880,6 +919,24 @@
         },
 
         closeModal(id) { document.getElementById(id).classList.remove('active'); },
+        showConfirm(title, message) {
+            return new Promise(resolve => {
+                const modal = document.getElementById('confirm-modal');
+                const ok = document.getElementById('confirm-ok');
+                const cancel = document.getElementById('confirm-cancel');
+                document.getElementById('confirm-title').textContent = title;
+                document.getElementById('confirm-message').textContent = message;
+                modal.classList.add('active');
+                const clean = (val) => {
+                    ok.onclick = null;
+                    cancel.onclick = null;
+                    modal.classList.remove('active');
+                    resolve(val);
+                };
+                cancel.onclick = () => clean(false);
+                ok.onclick = () => clean(true);
+            });
+        },
         
         showToast(msg) {
             const t = document.createElement('div');
