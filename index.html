@@ -23,12 +23,11 @@
         
         * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
         
-        /* 隐藏滚动条 */
         ::-webkit-scrollbar { display: none; }
         html, body { 
             width: 100%; height: 100%; 
             scrollbar-width: none; -ms-overflow-style: none;
-            background-color: #000; /* 背景底色 */
+            background-color: #000;
         }
         
         body {
@@ -51,34 +50,39 @@
             display: flex; justify-content: space-between; align-items: center; padding: 0 20px; position: sticky; top: 0; z-index: 100;
         }
         .brand { font-size: 19px; font-weight: 700; color: var(--text-main); letter-spacing: -0.5px; }
-        .header-btn {
-            font-size: 15px; font-weight: 600; color: var(--primary); border: none; background: transparent; padding: 8px 12px;
+        
+        /* 开始比赛蓝色按钮样式 */
+        .btn-primary-sm {
+            background: var(--primary); color: white; border: none; padding: 6px 14px;
+            border-radius: 10px; font-size: 14px; font-weight: 600; cursor: pointer;
         }
 
-        /* 球员卡片调整 */
         .grid-container { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; padding: 16px; }
         .player-card {
             background: #FFFFFF; border-radius: 22px; overflow: hidden; position: relative; 
             display: flex; flex-direction: column; height: 210px; transition: transform 0.2s ease;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.03); /* 极淡的固定阴影 */
+            box-shadow: 0 4px 12px rgba(0,0,0,0.03);
+            user-select: none; /* 禁止选中文本 */
         }
         .player-card:active { transform: scale(0.96); }
         .player-card.selected { border: 2.5px solid var(--success); }
 
-        .player-img-wrapper { flex: 1; background: #E5E5EA; position: relative; }
-        .player-img { width: 100%; height: 100%; object-fit: cover; }
+        .player-img-wrapper { flex: 1; background: #E5E5EA; position: relative; pointer-events: none; }
+        .player-img { 
+            width: 100%; height: 100%; object-fit: cover; 
+            pointer-events: none; /* 防止长按图片弹出系统菜单 */
+            -webkit-touch-callout: none; /* 禁用iOS长按菜单 */
+        }
         .player-info { padding: 12px; text-align: center; background: #FFF; }
         .player-name { font-size: 16px; font-weight: 700; margin-bottom: 2px; }
         .player-title { font-size: 12px; color: var(--text-sub); }
 
-        /* iOS 悬浮 Dock 栏 */
         .bottom-nav-container {
             position: fixed; bottom: 30px; left: 0; width: 100%; display: flex; justify-content: center; 
             z-index: 1000; pointer-events: none; padding: 0 20px;
         }
         .bottom-nav {
-            pointer-events: auto;
-            width: 100%; max-width: 360px; height: 68px;
+            pointer-events: auto; width: 100%; max-width: 360px; height: 68px;
             background: var(--glass-bg); backdrop-filter: blur(var(--glass-blur));
             border: 1px solid var(--glass-border); border-radius: 34px;
             display: flex; align-items: center; padding: 0 10px;
@@ -91,7 +95,6 @@
         .nav-item.active { color: var(--primary); transform: translateY(-2px); }
         .nav-icon { width: 26px; height: 26px; }
 
-        /* 弹窗通用样式 */
         .modal {
             display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
             background: rgba(0, 0, 0, 0.2); backdrop-filter: blur(10px); z-index: 2000;
@@ -101,11 +104,10 @@
         .modal-content {
             background: rgba(255, 255, 255, 0.95); width: 88%; max-width: 360px;
             border-radius: 30px; padding: 24px; box-shadow: var(--shadow-lg);
-            max-height: 85vh; overflow-y: auto; scrollbar-width: none; /* 移除滚动条 */
+            max-height: 85vh; overflow-y: auto; scrollbar-width: none;
         }
         .modal-content::-webkit-scrollbar { display: none; }
 
-        /* 编辑弹窗特定顺序样式 */
         .edit-section-title { font-size: 14px; font-weight: 600; color: var(--text-main); margin-bottom: 12px; }
         .upload-preview {
             width: 120px; height: 120px; border-radius: 20px; background: #EEE; 
@@ -113,7 +115,6 @@
         }
         .upload-preview img { width: 100%; height: 100%; object-fit: cover; }
 
-        /* 虚线框上传区域 */
         .video-upload-placeholder {
             border: 2px dashed #C7C7CC; border-radius: 16px; padding: 25px;
             text-align: center; color: var(--text-sub); cursor: pointer; transition: all 0.2s;
@@ -125,7 +126,11 @@
             width: 100%; background: var(--primary); color: white; border: none; border-radius: 16px; 
             padding: 15px; font-size: 16px; font-weight: 700; margin-top: 15px;
         }
-        .btn-link { color: var(--text-sub); font-size: 14px; margin-top: 15px; width: 100%; background: none; border: none; }
+        /* 取消修改按钮拉开距离 */
+        .btn-link { 
+            color: var(--text-sub); font-size: 14px; margin-top: 30px; 
+            width: 100%; background: none; border: none; padding: 10px;
+        }
 
         .toast {
             position: fixed; top: 40px; left: 50%; transform: translateX(-50%);
@@ -187,8 +192,8 @@
             <input type="file" id="avatar-upload" accept="image/*" style="display:none" onchange="App.handleAvatarUpload()">
 
             <div class="edit-section-title">基本信息</div>
-            <input type="text" id="edit-name" style="width:100%; padding:12px; border-radius:10px; border:1px solid #DDD; margin-bottom:12px;" placeholder="名字">
-            <input type="text" id="edit-title-input" style="width:100%; padding:12px; border-radius:10px; border:1px solid #DDD; margin-bottom:24px;" placeholder="称号">
+            <input type="text" id="edit-name" style="width:100%; padding:14px; border-radius:10px; border:1px solid #DDD; margin-bottom:12px; font-size:18px; font-weight:600;" placeholder="名字">
+            <input type="text" id="edit-title-input" style="width:100%; padding:14px; border-radius:10px; border:1px solid #DDD; margin-bottom:24px; font-size:18px; font-weight:600;" placeholder="称号">
 
             <div class="edit-section-title">AI技术分析视频</div>
             <div class="video-upload-placeholder" onclick="document.getElementById('video-upload').click()">
@@ -234,7 +239,7 @@
         ],
         matches: [],
         selectedIds: [],
-        currentUser: null, // 存储当前登录的球员对象
+        currentUser: null,
         longPressTimer: null,
 
         init() {
@@ -243,7 +248,6 @@
             this.showView('view-players');
         },
 
-        // 加载登录会话
         loadSession() {
             const savedUid = localStorage.getItem('logged_in_uid');
             if (savedUid) {
@@ -251,7 +255,6 @@
             }
         },
 
-        // 权限拦截校验
         checkAuth() {
             if (!this.currentUser) {
                 document.getElementById('login-modal').classList.add('active');
@@ -275,7 +278,7 @@
         },
 
         loadData() {
-            const stored = localStorage.getItem('badminton_v2_data');
+            const stored = localStorage.getItem('badminton_v3_data');
             if (stored) {
                 const data = JSON.parse(stored);
                 this.matches = data.matches || [];
@@ -287,7 +290,7 @@
         },
 
         saveData() {
-            localStorage.setItem('badminton_v2_data', JSON.stringify({
+            localStorage.setItem('badminton_v3_data', JSON.stringify({
                 matches: this.matches, players: this.players
             }));
         },
@@ -303,10 +306,10 @@
 
             const actions = document.getElementById('header-actions');
             if (viewId === 'view-players') {
-                actions.innerHTML = `<button class="header-btn" onclick="App.startTournament()">开始比赛</button>`;
+                actions.innerHTML = `<button class="btn-primary-sm" onclick="App.startTournament()">开始比赛</button>`;
                 this.renderPlayers();
             } else if (viewId === 'view-matches') {
-                actions.innerHTML = `<button class="header-btn" style="color:var(--danger)" onclick="App.clearMatches()">重置</button>`;
+                actions.innerHTML = `<button class="header-btn" style="color:var(--danger); border:none; background:none; font-size:14px; font-weight:600;" onclick="App.clearMatches()">重置赛事</button>`;
                 this.renderMatches();
             } else {
                 actions.innerHTML = "";
@@ -320,7 +323,9 @@
                 <div class="player-card ${this.selectedIds.includes(p.id) ? 'selected' : ''}" 
                      onclick="App.toggleSelect(${p.id})"
                      ontouchstart="App.startLongPress(${p.id})"
-                     ontouchend="App.endLongPress()">
+                     ontouchend="App.endLongPress()"
+                     onmousedown="App.startLongPress(${p.id})"
+                     onmouseup="App.endLongPress()">
                     <div class="player-img-wrapper">
                         <img src="${p.avatar}" class="player-img" onerror="this.src='https://via.placeholder.com/200x200?text=Player'">
                     </div>
@@ -441,22 +446,32 @@
             document.getElementById('score-modal').classList.add('active');
         },
 
+        // 重构比分逻辑：胜利+1分，失败0分
         submitScore() {
             const s1 = parseInt(document.getElementById('m-s1').value);
             const s2 = parseInt(document.getElementById('m-s2').value);
+            if(isNaN(s1) || isNaN(s2)) return this.showToast("请输入比分");
+
             const m = this.matches.find(x => x.id === this.currentMatchId);
-            
             const p1 = this.players.find(x => x.id === m.p1Id);
             const p2 = this.players.find(x => x.id === m.p2Id);
             
             m.s1 = s1; m.s2 = s2; m.done = true;
             p1.played++; p2.played++;
-            p1.totalScore += s1; p2.totalScore += s2;
-            if(s1 > s2) p1.wins++; else if(s2 > s1) p2.wins++;
+            
+            // 胜利积1分，失败不加分
+            if(s1 > s2) {
+                p1.wins++; 
+                p1.totalScore += 1; 
+            } else if(s2 > s1) {
+                p2.wins++; 
+                p2.totalScore += 1;
+            }
 
             this.saveData();
             this.closeModal('score-modal');
             this.renderMatches();
+            this.showToast("成绩已登记");
         },
 
         renderRank() {
@@ -464,12 +479,15 @@
             document.getElementById('rank-list').innerHTML = sorted.map((p, i) => `
                 <div style="display:flex; align-items:center; background:#FFF; margin:8px 16px; padding:15px; border-radius:18px;">
                     <div style="width:30px; font-weight:800; color:var(--primary)">${i+1}</div>
-                    <img src="${p.avatar}" style="width:40px; height:40px; border-radius:20px; margin:0 12px;">
+                    <img src="${p.avatar}" style="width:40px; height:40px; border-radius:20px; margin:0 12px; object-fit:cover;">
                     <div style="flex:1">
                         <div style="font-weight:700;">${p.name}</div>
-                        <div style="font-size:11px; color:#999;">胜率 ${p.played ? Math.round(p.wins/p.played*100) : 0}%</div>
+                        <div style="font-size:11px; color:#999;">出战 ${p.played} | 胜场 ${p.wins}</div>
                     </div>
-                    <div style="font-weight:800; color:var(--success)">${p.totalScore}</div>
+                    <div style="text-align:right;">
+                        <div style="font-weight:800; color:var(--success); font-size:18px;">${p.totalScore}</div>
+                        <div style="font-size:10px; color:#CCC;">积分</div>
+                    </div>
                 </div>
             `).join('');
         },
@@ -481,6 +499,7 @@
                 this.players.forEach(p => { p.wins = 0; p.played = 0; p.totalScore = 0; });
                 this.saveData();
                 this.renderMatches();
+                this.showToast("赛事已重置");
             }
         },
 
@@ -491,7 +510,10 @@
             t.className = 'toast';
             t.textContent = msg;
             document.body.appendChild(t);
-            setTimeout(() => t.remove(), 2000);
+            setTimeout(() => {
+                t.style.opacity = '0';
+                setTimeout(() => t.remove(), 300);
+            }, 2000);
         }
     };
 
