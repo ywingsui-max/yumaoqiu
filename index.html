@@ -22,12 +22,18 @@
         }
         
         * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+        input:focus::placeholder,
+        textarea:focus::placeholder {
+            color: transparent;
+            opacity: 0;
+        }
         
         ::-webkit-scrollbar { display: none; }
         html, body { 
             width: 100%; height: 100%; 
             scrollbar-width: none; -ms-overflow-style: none;
             background-color: #000;
+            -webkit-text-size-adjust: 100%;
         }
         
         body {
@@ -60,22 +66,40 @@
         .grid-container { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; padding: 16px; }
         .player-card {
             background: #FFFFFF; border-radius: 22px; overflow: hidden; position: relative; 
-            display: flex; flex-direction: column; height: 210px; transition: transform 0.2s ease;
+            display: grid; grid-template-rows: minmax(0, 1fr) 64px; height: 210px; transition: transform 0.2s ease;
             box-shadow: 0 4px 12px rgba(0,0,0,0.03);
             user-select: none; /* 禁止选中文本 */
         }
         .player-card:active { transform: scale(0.96); }
         .player-card.selected { border: 2.5px solid var(--success); }
 
-        .player-img-wrapper { flex: 1; background: #E5E5EA; position: relative; pointer-events: none; }
+        .player-img-wrapper { background: #E5E5EA; position: relative; pointer-events: none; min-height: 0; }
         .player-img { 
             width: 100%; height: 100%; object-fit: cover; 
             pointer-events: none; /* 防止长按图片弹出系统菜单 */
             -webkit-touch-callout: none; /* 禁用iOS长按菜单 */
         }
-        .player-info { padding: 12px; text-align: center; background: #FFF; }
-        .player-name { font-size: 16px; font-weight: 700; margin-bottom: 2px; }
-        .player-title { font-size: 12px; color: var(--text-sub); }
+        .player-info {
+            height: 64px;
+            padding: 0 10px;
+            text-align: center;
+            background: #FFF;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 2px;
+        }
+        .player-name { font-size: 16px; font-weight: 700; margin: 0; line-height: 1.25; }
+        .player-title {
+            font-size: 12px;
+            color: var(--text-sub);
+            line-height: 1.35;
+            margin: 0;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
 
         .bottom-nav-container {
             position: fixed; bottom: 30px; left: 0; width: 100%; display: flex; justify-content: center; 
@@ -121,6 +145,32 @@
             background: rgba(0,0,0,0.02);
         }
         .video-upload-placeholder:active { background: rgba(0,0,0,0.05); border-color: var(--text-sub); }
+        .ai-result-btn {
+            border: none;
+            border-radius: 999px;
+            padding: 6px 12px;
+            font-size: 12px;
+            font-weight: 700;
+            color: #fff;
+            background: linear-gradient(135deg, #0A84FF 0%, #5E5CE6 100%);
+        }
+        .ai-result-btn.hidden {
+            opacity: 0.35;
+            pointer-events: none;
+        }
+        .rank-tag {
+            display: inline-flex;
+            align-items: center;
+            padding: 2px 8px;
+            border-radius: 999px;
+            font-size: 10px;
+            font-weight: 700;
+            margin-left: 6px;
+            color: #fff;
+            backdrop-filter: blur(12px);
+            background: linear-gradient(135deg, rgba(10,132,255,0.9), rgba(94,92,230,0.9));
+            box-shadow: 0 3px 10px rgba(10,132,255,0.25);
+        }
 
         .btn-full {
             width: 100%; background: var(--primary); color: white; border: none; border-radius: 16px; 
@@ -136,6 +186,25 @@
             position: fixed; top: 40px; left: 50%; transform: translateX(-50%);
             background: rgba(0,0,0,0.8); color: white; padding: 10px 20px; border-radius: 20px;
             font-size: 14px; z-index: 3000; animation: toastIn 0.3s ease forwards;
+        }
+        .score-input {
+            width: 100%;
+            padding: 12px;
+            text-align: center;
+            border-radius: 10px;
+            border: 1px solid #DDD;
+            font-size: 14px;
+            -webkit-text-fill-color: #000;
+            color: #000;
+        }
+        .score-input:focus,
+        .score-input.ime-active {
+            color: #000;
+            -webkit-text-fill-color: #000;
+        }
+        #score-modal .score-input:focus::placeholder {
+            color: transparent;
+            opacity: 0;
         }
         @keyframes toastIn { from { opacity: 0; transform: translate(-50%, -20px); } to { opacity: 1; transform: translate(-50%, 0); } }
     </style>
@@ -195,7 +264,10 @@
             <input type="text" id="edit-name" style="width:100%; padding:14px; border-radius:10px; border: 1px solid #DDDDDD4D;; margin-bottom:12px; font-size:14px; font-weight:400;" placeholder="名字">
             <input type="text" id="edit-title-input" style="width:100%; padding:14px; border-radius:10px; border: 1px solid #DDDDDD4D;; margin-bottom:24px; font-size:14px; font-weight:400;" placeholder="称号">
 
-            <div class="edit-section-title">AI技术分析视频</div>
+            <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:12px;">
+                <div class="edit-section-title" style="margin-bottom:0;">AI技术分析视频</div>
+                <button class="ai-result-btn hidden" id="ai-result-btn" onclick="App.openAiReportPage()">查看结果</button>
+            </div>
             <div class="video-upload-placeholder" onclick="document.getElementById('video-upload').click()">
                 <div style="font-size: 24px; margin-bottom: 8px;">+</div>
                 <div id="video-info" style="font-size: 13px;">点击上传技术动作视频</div>
@@ -213,12 +285,12 @@
             <div style="display:flex; align-items:center; gap:10px; margin-bottom:20px;">
                 <div style="flex:1; text-align:center;">
                     <div id="m-p1-name" style="font-weight:700; font-size:14px; margin-bottom:8px;"></div>
-                    <input type="number" id="m-s1" style="width:100%; padding:12px; text-align:center; border-radius:10px; border:1px solid #DDD;" placeholder="0">
+                    <input type="text" id="m-s1" class="score-input" placeholder="0" inputmode="numeric" autocomplete="off">
                 </div>
                 <div style="font-weight:bold; color:#CCC;">VS</div>
                 <div style="flex:1; text-align:center;">
                     <div id="m-p2-name" style="font-weight:700; font-size:14px; margin-bottom:8px;"></div>
-                    <input type="number" id="m-s2" style="width:100%; padding:12px; text-align:center; border-radius:10px; border:1px solid #DDD;" placeholder="0">
+                    <input type="text" id="m-s2" class="score-input" placeholder="0" inputmode="numeric" autocomplete="off">
                 </div>
             </div>
             <button class="btn-full" onclick="App.submitScore()">提交成绩</button>
@@ -227,6 +299,7 @@
     </div>
 </div>
 
+<script src="https://cdn.jsdelivr.net/npm/@mediapipe/pose/pose.js"></script>
 <script>
     const App = {
         players: [
@@ -234,18 +307,61 @@
             { id: 2, name: "高总", title: "一击必杀", avatar: "https://github.com/ywingsui-max/yumaoqiu-assets/blob/main/gz.jpg?raw=true", loginCode: "0716", wins: 0, played: 0, totalScore: 0 },
             { id: 3, name: "C炜", title: "旋风小霸王", avatar: "https://github.com/ywingsui-max/yumaoqiu-assets/blob/main/cwei.jpg?raw=true", loginCode: "777", wins: 0, played: 0, totalScore: 0 },
             { id: 4, name: "鸿哥", title: "大师选手", avatar: "https://github.com/ywingsui-max/yumaoqiu-assets/blob/main/ch.jpg?raw=true", loginCode: "999", wins: 0, played: 0, totalScore: 0 },
-            { id: 5, name: "春阳", title: "就是干你", avatar: "https://github.com/ywingsui-max/yumaoqiu-assets/blob/main/cy.jpg?raw=true", loginCode: "555", wins: 0, played: 0, totalScore: 0 },
-            { id: 6, name: "蕭", title: "敏思剑君", avatar: "https://github.com/ywingsui-max/yumaoqiu-assets/blob/main/jm.jpg?raw=true", loginCode: "444", wins: 0, played: 0, totalScore: 0 }
+            { id: 5, name: "春阳", title: "小白杀手", avatar: "https://github.com/ywingsui-max/yumaoqiu-assets/blob/main/cy.jpg?raw=true", loginCode: "555", wins: 0, played: 0, totalScore: 0 },
+            { id: 6, name: "蕭", title: "潇洒剑君", avatar: "https://github.com/ywingsui-max/yumaoqiu-assets/blob/main/jm.jpg?raw=true", loginCode: "444", wins: 0, played: 0, totalScore: 0 }
         ],
         matches: [],
         selectedIds: [],
+        aiReports: {},
         currentUser: null,
+        currentEditPlayerId: null,
         longPressTimer: null,
 
         init() {
             this.loadSession();
             this.loadData();
+            this.bindScoreInputs();
             this.showView('view-players');
+        },
+
+        bindScoreInputs() {
+            ['m-s1', 'm-s2'].forEach(id => {
+                const input = document.getElementById(id);
+                input.dataset.lastValid = '0';
+                input.addEventListener('compositionstart', () => {
+                    input.classList.add('ime-active');
+                });
+                input.addEventListener('compositionend', () => {
+                    const normalized = this.normalizeScoreInput(input.value, '');
+                    input.value = normalized;
+                    if (normalized) input.dataset.lastValid = normalized;
+                    input.classList.remove('ime-active');
+                });
+                input.addEventListener('focus', () => {
+                    input.placeholder = '';
+                    if (input.value === '0') {
+                        input.value = '';
+                    }
+                });
+                input.addEventListener('input', e => {
+                    if (e.isComposing) return;
+                    const digits = String(input.value ?? '').replace(/[^\d]/g, '');
+                    input.value = digits;
+                    if (digits) input.dataset.lastValid = String(parseInt(digits, 10));
+                });
+                input.addEventListener('blur', () => {
+                    input.placeholder = '0';
+                    const normalized = this.normalizeScoreInput(input.value, '');
+                    input.value = normalized;
+                    if (normalized) input.dataset.lastValid = normalized;
+                });
+            });
+        },
+
+        normalizeScoreInput(rawValue, fallback = '0') {
+            const digits = String(rawValue ?? '').replace(/[^\d]/g, '');
+            if (!digits) return fallback || '0';
+            return String(parseInt(digits, 10));
         },
 
         loadSession() {
@@ -282,6 +398,7 @@
             if (stored) {
                 const data = JSON.parse(stored);
                 this.matches = data.matches || [];
+                this.aiReports = data.aiReports || {};
                 data.players?.forEach(sp => {
                     const p = this.players.find(ap => ap.id === sp.id);
                     if (p) Object.assign(p, sp);
@@ -291,7 +408,7 @@
 
         saveData() {
             localStorage.setItem('badminton_v3_data', JSON.stringify({
-                matches: this.matches, players: this.players
+                matches: this.matches, players: this.players, aiReports: this.aiReports
             }));
         },
 
@@ -330,7 +447,7 @@
                         <img src="${p.avatar}" class="player-img" onerror="this.src='https://via.placeholder.com/200x200?text=Player'">
                     </div>
                     <div class="player-info">
-                        <div class="player-name">${p.name}</div>
+                        <div class="player-name">${p.name}${this.aiReports[p.id] ? `<span class="rank-tag">${this.aiReports[p.id].tier}</span>` : ''}</div>
                         <div class="player-title">${p.title}</div>
                     </div>
                 </div>
@@ -377,9 +494,12 @@
 
         openEditModal(id) {
             const p = this.players.find(x => x.id === id);
+            this.currentEditPlayerId = id;
             document.getElementById('edit-name').value = p.name;
             document.getElementById('edit-title-input').value = p.title;
             document.getElementById('avatar-preview').innerHTML = `<img src="${p.avatar}">`;
+            document.getElementById('video-info').textContent = "点击上传技术动作视频";
+            this.refreshAiResultButton();
             document.getElementById('edit-player-modal').classList.add('active');
         },
 
@@ -403,9 +523,311 @@
             reader.readAsDataURL(file);
         },
 
-        handleVideoUpload() {
+        async handleVideoUpload() {
             const file = document.getElementById('video-upload').files[0];
-            if(file) document.getElementById('video-info').textContent = "✓ 已选择: " + file.name;
+            if(!file) return;
+            if (!this.currentEditPlayerId) return this.showToast("请先选择球员");
+            document.getElementById('video-info').textContent = "分析中，请稍候...";
+            this.showToast("AI 正在分析视频");
+            try {
+                const report = await this.analyzeVideo(file);
+                this.aiReports[this.currentEditPlayerId] = report;
+                this.saveData();
+                this.refreshAiResultButton();
+                this.renderPlayers();
+                document.getElementById('video-info').textContent = `✓ 分析完成：${file.name}`;
+                this.showToast(`分析完成：${report.totalScore} 分 ${report.tier}`);
+            } catch (err) {
+                document.getElementById('video-info').textContent = "分析失败，请重试";
+                this.showToast(err?.message || "分析失败");
+            }
+        },
+
+        refreshAiResultButton() {
+            const btn = document.getElementById('ai-result-btn');
+            const report = this.aiReports[this.currentEditPlayerId];
+            if (report) {
+                btn.classList.remove('hidden');
+                btn.textContent = `查看结果 ${report.totalScore}分`;
+            } else {
+                btn.classList.add('hidden');
+                btn.textContent = "查看结果";
+            }
+        },
+
+        async analyzeVideo(file) {
+            if (!window.Pose) throw new Error("MediaPipe 加载失败");
+            const player = this.players.find(x => x.id === this.currentEditPlayerId);
+            const url = URL.createObjectURL(file);
+            const video = document.createElement('video');
+            video.src = url;
+            video.muted = true;
+            video.playsInline = true;
+            video.crossOrigin = "anonymous";
+            await new Promise((resolve, reject) => {
+                video.onloadedmetadata = resolve;
+                video.onerror = () => reject(new Error("视频读取失败"));
+            });
+            const duration = Math.min(video.duration || 0, 60);
+            if (!duration || duration < 1) {
+                URL.revokeObjectURL(url);
+                throw new Error("视频时长过短");
+            }
+            const pose = new Pose({
+                locateFile: (f) => `https://cdn.jsdelivr.net/npm/@mediapipe/pose/${f}`
+            });
+            pose.setOptions({
+                modelComplexity: 1,
+                smoothLandmarks: true,
+                minDetectionConfidence: 0.5,
+                minTrackingConfidence: 0.5
+            });
+            const metrics = {
+                smash: 0,
+                lob: 0,
+                drop: 0,
+                footworkDistance: 0,
+                maxWristSpeed: 0,
+                speedSamples: [],
+                stanceStability: [],
+                courtCoverageX: [],
+                courtCoverageY: [],
+                shotTimeline: []
+            };
+            let prev = null;
+            let lastShotTime = -10;
+            const getDist = (a, b) => Math.hypot(a.x - b.x, a.y - b.y, (a.z || 0) - (b.z || 0));
+            const getAngle = (a, b, c) => {
+                const ab = [a.x - b.x, a.y - b.y];
+                const cb = [c.x - b.x, c.y - b.y];
+                const dot = ab[0] * cb[0] + ab[1] * cb[1];
+                const lab = Math.hypot(ab[0], ab[1]);
+                const lcb = Math.hypot(cb[0], cb[1]);
+                const cos = Math.max(-1, Math.min(1, dot / ((lab * lcb) || 1)));
+                return Math.acos(cos) * 180 / Math.PI;
+            };
+            pose.onResults((res) => {
+                const lm = res.poseLandmarks;
+                if (!lm) return;
+                const leftWrist = lm[15];
+                const rightWrist = lm[16];
+                const leftShoulder = lm[11];
+                const rightShoulder = lm[12];
+                const leftHip = lm[23];
+                const rightHip = lm[24];
+                const leftAnkle = lm[27];
+                const rightAnkle = lm[28];
+                const shoulderWidth = getDist(leftShoulder, rightShoulder) || 0.2;
+                const hipCenter = { x: (leftHip.x + rightHip.x) / 2, y: (leftHip.y + rightHip.y) / 2, z: (leftHip.z + rightHip.z) / 2 };
+                const wristY = (leftWrist.y + rightWrist.y) / 2;
+                const shoulderY = (leftShoulder.y + rightShoulder.y) / 2;
+                const elbowAngleL = getAngle(lm[11], lm[13], lm[15]);
+                const elbowAngleR = getAngle(lm[12], lm[14], lm[16]);
+                metrics.stanceStability.push(100 - Math.min(100, Math.abs(leftShoulder.y - rightShoulder.y) * 380));
+                metrics.courtCoverageX.push(hipCenter.x);
+                metrics.courtCoverageY.push((leftAnkle.y + rightAnkle.y) / 2);
+                if (prev) {
+                    const dt = Math.max(0.001, prev.dt);
+                    const wristMove = (getDist(leftWrist, prev.leftWrist) + getDist(rightWrist, prev.rightWrist)) / 2;
+                    const wristSpeed = wristMove / dt / shoulderWidth;
+                    const hipMove = getDist(hipCenter, prev.hipCenter) / shoulderWidth;
+                    const wristDeltaY = wristY - prev.wristY;
+                    metrics.maxWristSpeed = Math.max(metrics.maxWristSpeed, wristSpeed);
+                    metrics.speedSamples.push(wristSpeed);
+                    metrics.footworkDistance += hipMove;
+                    const t = prev.time;
+                    if (t - lastShotTime > 0.35 && wristSpeed > 1.9 && wristY < shoulderY + 0.06) {
+                        if (wristDeltaY > 0.012) {
+                            metrics.smash++;
+                            metrics.shotTimeline.push({ t, type: "杀球" });
+                        } else if (wristDeltaY < -0.008) {
+                            metrics.lob++;
+                            metrics.shotTimeline.push({ t, type: "挑球" });
+                        } else if (Math.abs(wristDeltaY) <= 0.01 && (elbowAngleL > 140 || elbowAngleR > 140)) {
+                            metrics.drop++;
+                            metrics.shotTimeline.push({ t, type: "吊球" });
+                        }
+                        lastShotTime = t;
+                    }
+                }
+                prev = {
+                    leftWrist,
+                    rightWrist,
+                    hipCenter,
+                    wristY,
+                    time: video.currentTime,
+                    dt: 0.12
+                };
+            });
+            const step = 0.12;
+            for (let t = 0.05; t < duration; t += step) {
+                await new Promise(resolve => {
+                    const onSeeked = () => {
+                        video.removeEventListener('seeked', onSeeked);
+                        resolve();
+                    };
+                    video.addEventListener('seeked', onSeeked);
+                    video.currentTime = Math.min(t, duration - 0.03);
+                });
+                await pose.send({ image: video });
+            }
+            URL.revokeObjectURL(url);
+            const sum = arr => arr.reduce((a, b) => a + b, 0);
+            const avg = arr => arr.length ? sum(arr) / arr.length : 0;
+            const shotTotal = metrics.smash + metrics.lob + metrics.drop;
+            const xRange = metrics.courtCoverageX.length ? Math.max(...metrics.courtCoverageX) - Math.min(...metrics.courtCoverageX) : 0;
+            const yRange = metrics.courtCoverageY.length ? Math.max(...metrics.courtCoverageY) - Math.min(...metrics.courtCoverageY) : 0;
+            const variety = [metrics.smash, metrics.lob, metrics.drop].filter(v => v > 0).length;
+            const avgSpeed = avg(metrics.speedSamples);
+            const stability = avg(metrics.stanceStability);
+            const clamp = v => Math.max(40, Math.min(100, Math.round(v)));
+            const power = clamp(52 + metrics.maxWristSpeed * 12 + metrics.smash * 1.5);
+            const technique = clamp(55 + variety * 8 + stability * 0.18);
+            const speed = clamp(50 + avgSpeed * 18);
+            const awareness = clamp(50 + metrics.footworkDistance * 3 + (xRange + yRange) * 50);
+            const growth = clamp(48 + shotTotal * 1.1 + variety * 6);
+            const tactics = clamp(52 + Math.min(metrics.smash, metrics.lob + metrics.drop) * 2 + variety * 7);
+            const totalScore = Math.max(45, Math.min(100, Math.round(
+                power * 0.2 + technique * 0.2 + speed * 0.18 + awareness * 0.14 + growth * 0.14 + tactics * 0.14
+            )));
+            const tier = totalScore >= 91 ? "王者" : totalScore >= 81 ? "黄金" : totalScore >= 71 ? "白银" : totalScore >= 61 ? "青铜" : "待提升";
+            const tips = [];
+            const dims = [
+                { k: "力量", v: power, t: "增加核心与前臂爆发训练，提升后场下压球速。" },
+                { k: "技术", v: technique, t: "加强击球点前移与拍面控制，减少无效挥拍。" },
+                { k: "速度", v: speed, t: "做多拍连续启动训练，提高启动和回位速度。" },
+                { k: "意识", v: awareness, t: "提前预判来球线路，落点前半拍完成启动。" },
+                { k: "成长度", v: growth, t: "每周固定复盘本场视频，记录动作改进点。" },
+                { k: "战术", v: tactics, t: "优化杀吊结合与拉开线路，减少单一进攻。" }
+            ].sort((a, b) => a.v - b.v);
+            tips.push(...dims.slice(0, 3).map(x => `${x.k}：${x.t}`));
+            return {
+                playerId: this.currentEditPlayerId,
+                playerName: player?.name || "",
+                createdAt: Date.now(),
+                totalScore,
+                tier,
+                metrics: {
+                    smash: metrics.smash,
+                    lob: metrics.lob,
+                    drop: metrics.drop,
+                    footworkDistance: Number(metrics.footworkDistance.toFixed(2)),
+                    avgSpeed: Number(avgSpeed.toFixed(2)),
+                    maxWristSpeed: Number(metrics.maxWristSpeed.toFixed(2)),
+                    shotTotal
+                },
+                dimensions: { power, technique, speed, awareness, growth, tactics },
+                tips
+            };
+        },
+
+        openAiReportPage() {
+            if (!this.currentEditPlayerId) return this.showToast("请先选择球员");
+            const report = this.aiReports[this.currentEditPlayerId];
+            if (!report) return this.showToast("暂无分析结果");
+            const player = this.players.find(x => x.id === this.currentEditPlayerId);
+            const labels = ['力量', '技术', '速度', '意识', '成长度', '战术'];
+            const values = [
+                report.dimensions.power,
+                report.dimensions.technique,
+                report.dimensions.speed,
+                report.dimensions.awareness,
+                report.dimensions.growth,
+                report.dimensions.tactics
+            ];
+            const center = 170;
+            const radius = 112;
+            const points = values.map((v, i) => {
+                const angle = -Math.PI / 2 + i * Math.PI / 3;
+                const r = radius * (v / 100);
+                return `${(center + Math.cos(angle) * r).toFixed(2)},${(center + Math.sin(angle) * r).toFixed(2)}`;
+            }).join(' ');
+            const axis = labels.map((label, i) => {
+                const angle = -Math.PI / 2 + i * Math.PI / 3;
+                const x = center + Math.cos(angle) * (radius + 24);
+                const y = center + Math.sin(angle) * (radius + 24);
+                const x2 = center + Math.cos(angle) * radius;
+                const y2 = center + Math.sin(angle) * radius;
+                return `<line x1="${center}" y1="${center}" x2="${x2}" y2="${y2}" stroke="rgba(255,255,255,.35)"/><text x="${x}" y="${y}" fill="#fff" font-size="13" text-anchor="middle">${label}</text>`;
+            }).join('');
+            const rings = [0.25, 0.5, 0.75, 1].map(r => {
+                const ringPoints = labels.map((_, i) => {
+                    const angle = -Math.PI / 2 + i * Math.PI / 3;
+                    return `${(center + Math.cos(angle) * radius * r).toFixed(2)},${(center + Math.sin(angle) * radius * r).toFixed(2)}`;
+                }).join(' ');
+                return `<polygon points="${ringPoints}" fill="none" stroke="rgba(255,255,255,.22)" />`;
+            }).join('');
+            const html = `<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>${player?.name || report.playerName} 技术分析报表</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display",sans-serif;background:linear-gradient(155deg,#1f2a44,#101828);color:#fff;min-height:100vh;padding:24px}
+.deck{max-width:1000px;margin:0 auto;display:grid;gap:18px}
+.glass{background:linear-gradient(145deg,rgba(255,255,255,.22),rgba(255,255,255,.08));border:1px solid rgba(255,255,255,.25);backdrop-filter:blur(24px);border-radius:28px;box-shadow:0 20px 60px rgba(0,0,0,.28)}
+.hero{padding:24px;display:flex;justify-content:space-between;align-items:center;gap:16px}
+.name{font-size:28px;font-weight:800;letter-spacing:-.5px}
+.tier{padding:8px 14px;border-radius:999px;background:linear-gradient(135deg,#0A84FF,#5E5CE6);font-weight:800;font-size:14px}
+.score{font-size:52px;font-weight:900;line-height:1}
+.sub{opacity:.78;font-size:13px;margin-top:8px}
+.grid{display:grid;grid-template-columns:1.2fr 1fr;gap:18px}
+.panel{padding:22px}
+.cards{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+.kpi{padding:14px;border-radius:16px;background:rgba(255,255,255,.1)}
+.kpi .v{font-size:24px;font-weight:800;margin-top:6px}
+.list{display:grid;gap:10px}
+.list div{padding:12px;border-radius:14px;background:rgba(255,255,255,.1);font-size:14px;line-height:1.45}
+@media (max-width: 860px){.grid{grid-template-columns:1fr}.cards{grid-template-columns:repeat(2,1fr)}}
+</style>
+</head>
+<body>
+<div class="deck">
+<div class="glass hero">
+<div>
+<div class="name">${player?.name || report.playerName} 羽球AI技术统计</div>
+<div class="sub">自动分析时间：${new Date(report.createdAt).toLocaleString()}</div>
+</div>
+<div style="text-align:right">
+<div class="tier">${report.tier}</div>
+<div class="score">${report.totalScore}</div>
+<div class="sub">综合评分 / 100</div>
+</div>
+</div>
+<div class="grid">
+<div class="glass panel">
+<svg viewBox="0 0 340 340" width="100%" style="max-width:420px;display:block;margin:0 auto">
+${rings}
+${axis}
+<polygon points="${points}" fill="rgba(10,132,255,.35)" stroke="#66b3ff" stroke-width="2.5"></polygon>
+<circle cx="${center}" cy="${center}" r="4" fill="#fff"></circle>
+</svg>
+</div>
+<div class="glass panel">
+<div class="cards">
+<div class="kpi"><div>杀球识别</div><div class="v">${report.metrics.smash}</div></div>
+<div class="kpi"><div>挑球识别</div><div class="v">${report.metrics.lob}</div></div>
+<div class="kpi"><div>吊球识别</div><div class="v">${report.metrics.drop}</div></div>
+<div class="kpi"><div>击球总数</div><div class="v">${report.metrics.shotTotal}</div></div>
+<div class="kpi"><div>走位距离</div><div class="v">${report.metrics.footworkDistance}</div></div>
+<div class="kpi"><div>峰值速度</div><div class="v">${report.metrics.maxWristSpeed}</div></div>
+</div>
+</div>
+</div>
+<div class="glass panel">
+<div style="font-size:22px;font-weight:800;margin-bottom:12px">评审建议与注意事项</div>
+<div class="list">${report.tips.map(t => `<div>${t}</div>`).join('')}</div>
+</div>
+</div>
+</body>
+</html>`;
+            const win = window.open('', '_blank');
+            if (!win) return this.showToast("请允许浏览器打开新页面");
+            win.document.open();
+            win.document.write(html);
+            win.document.close();
         },
 
         renderMatches() {
@@ -441,8 +863,16 @@
             const m = this.matches.find(x => x.id === id);
             const p1 = this.players.find(x => x.id === m.p1Id);
             const p2 = this.players.find(x => x.id === m.p2Id);
+            const s1 = Number.isInteger(m.s1) ? String(m.s1) : '';
+            const s2 = Number.isInteger(m.s2) ? String(m.s2) : '';
             document.getElementById('m-p1-name').textContent = p1.name;
             document.getElementById('m-p2-name').textContent = p2.name;
+            document.getElementById('m-s1').value = s1;
+            document.getElementById('m-s2').value = s2;
+            document.getElementById('m-s1').placeholder = '0';
+            document.getElementById('m-s2').placeholder = '0';
+            document.getElementById('m-s1').dataset.lastValid = s1 || '0';
+            document.getElementById('m-s2').dataset.lastValid = s2 || '0';
             document.getElementById('score-modal').classList.add('active');
         },
 
