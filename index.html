@@ -292,7 +292,7 @@
                 <div class="edit-section-title" style="margin-bottom:0;">AI技术分析视频</div>
                 <button class="ai-result-btn hidden" id="ai-result-btn" onclick="App.openAiReportPage()">查看结果</button>
             </div>
-            <div class="video-upload-placeholder" onclick="document.getElementById('video-upload').click()">
+            <div class="video-upload-placeholder" onclick="App.prepareVideoUpload()">
                 <div style="font-size: 24px; margin-bottom: 8px;">+</div>
                 <div id="video-info" style="font-size: 13px;">点击上传技术动作视频</div>
             </div>
@@ -348,6 +348,7 @@
         aiTasks: {},
         currentUser: null,
         currentEditPlayerId: null,
+        pendingReportWindow: null,
         longPressTimer: null,
 
         init() {
@@ -567,13 +568,21 @@
 
         async handleVideoUpload() {
             const file = document.getElementById('video-upload').files[0];
-            if(!file) return;
+            if(!file) {
+                if (this.pendingReportWindow && !this.pendingReportWindow.closed) {
+                    this.pendingReportWindow.close();
+                }
+                this.pendingReportWindow = null;
+                return;
+            }
             const playerId = this.currentEditPlayerId;
             if (!playerId) return this.showToast("请先选择球员");
             this.updateAiTask(playerId, { status: 'running', progress: 1, message: 'AI模型初始化中...' });
             document.getElementById('video-info').textContent = "AI模型初始化中...";
             this.refreshAiResultButton();
-            this.openAiReportPage(playerId);
+            if (!this.pendingReportWindow || this.pendingReportWindow.closed) {
+                this.openAiReportPage(playerId);
+            }
             this.showToast("AI 正在分析视频");
             try {
                 let lastSyncProgress = 0;
@@ -598,6 +607,13 @@
                 document.getElementById('video-info').textContent = "分析失败，请重试";
                 this.showToast(err?.message || "分析失败");
             }
+            this.pendingReportWindow = null;
+        },
+
+        prepareVideoUpload() {
+            if (!this.currentEditPlayerId) return this.showToast("请先选择球员");
+            this.pendingReportWindow = window.open(`ai-report.html?playerId=${this.currentEditPlayerId}`, '_blank');
+            document.getElementById('video-upload').click();
         },
 
         updateAiTask(playerId, payload) {
@@ -838,7 +854,9 @@
             if (!playerId) return this.showToast("请先选择球员");
             const url = `ai-report.html?playerId=${playerId}`;
             const win = window.open(url, '_blank');
-            if (!win) this.showToast("请允许浏览器打开新页面");
+            if (!win) {
+                this.showToast("请允许浏览器打开新页面");
+            }
         },
 
         renderMatches() {
