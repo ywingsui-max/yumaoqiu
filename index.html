@@ -239,7 +239,7 @@
 
         .btn-full {
             width: 100%; background: var(--primary); color: white; border: none; border-radius: 14px; padding: 14px 20px;
-            font-size: 16px; font-weight: 700; cursor: pointer; transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            font-size: 16px; font-weight: 700; cursor: pointer; transition: all 0.2: cubic-bezier(0.4, 0, 0.2, 1);
             margin-top: 12px; box-shadow: 0 4px 12px rgba(0, 122, 255, 0.3); letter-spacing: -0.3px;
         }
         
@@ -316,7 +316,6 @@
         </div>
     </nav>
 
-    <!-- 登录弹窗 -->
     <div class="modal" id="login-modal">
         <div class="modal-content">
             <div class="modal-title">登录编辑</div>
@@ -329,7 +328,6 @@
         </div>
     </div>
 
-    <!-- 编辑球员弹窗 -->
     <div class="modal" id="edit-player-modal">
         <div class="modal-content">
             <div class="modal-title" id="edit-title">编辑球员信息</div>
@@ -365,7 +363,6 @@
         </div>
     </div>
 
-    <!-- 比分弹窗 -->
     <div class="modal" id="score-modal">
         <div class="modal-content">
             <div class="modal-title">登记比赛比分</div>
@@ -404,6 +401,7 @@
         currentLoginCode: null,
         rankedCache: null,
         longPressTimer: null,
+        isLongPressTriggered: false, // 修复标记：识别是否刚触发了长按
 
         init() { this.loadData(); this.showView('view-players'); },
 
@@ -498,10 +496,12 @@
         },
 
         startLongPress(id) {
+            this.isLongPressTriggered = false; // 重置标记
             this.longPressTimer = setTimeout(() => {
+                this.isLongPressTriggered = true; // 标记已触发长按
                 this.currentEditPlayerId = id;
                 this.openLoginModal();
-            }, 500);
+            }, 600); // 稍微延长一点防止误触
         },
 
         endLongPress() {
@@ -512,7 +512,11 @@
         },
 
         toggleSelect(id) {
-            if (this.longPressTimer) return;
+            // 修复：如果刚刚触发了长按，则不执行选中逻辑
+            if (this.isLongPressTriggered) {
+                this.isLongPressTriggered = false;
+                return;
+            }
             const idx = this.selectedIds.indexOf(id);
             if (idx > -1) { this.selectedIds.splice(idx, 1); }
             else { this.selectedIds.push(id); }
@@ -527,8 +531,7 @@
 
         closeLoginModal() {
             document.getElementById('login-modal').classList.remove('active');
-            this.currentEditPlayerId = null;
-            this.currentLoginCode = null;
+            // 注意：这里暂时不清除 ID，因为 submitLogin 还要用
         },
 
         submitLogin() {
@@ -546,14 +549,17 @@
                 return;
             }
 
+            const targetId = this.currentEditPlayerId; // 关键修复：暂存ID防止被 closeLoginModal 清除
             this.currentLoginCode = code;
             this.closeLoginModal();
-            this.openEditModal(this.currentEditPlayerId);
+            this.openEditModal(targetId); 
         },
 
         openEditModal(playerId) {
             const player = this.getPlayerById(playerId);
             if (!player) return;
+            
+            this.currentEditPlayerId = playerId; // 关键修复：确保编辑状态绑定到正确球员
 
             document.getElementById('edit-title').textContent = `编辑 ${player.name} 的信息`;
             document.getElementById('edit-name').value = player.name;
